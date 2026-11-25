@@ -1,5 +1,23 @@
 # Monica Android Constitution
 
+## Product Context
+
+- This app is the **Android version of the Monica web application**
+  ([monicahq/monica](https://github.com/monicahq/monica)). The goal is to offer, over time, every
+  feature of the web app, plus what only makes sense on a phone (notifications, sharing, the
+  device's contacts, widgets, offline reading, camera).
+- The Monica server is the source of truth for data and business rules. The app talks to it
+  **only through its public JSON API** (`/api/v1`, Sanctum bearer tokens, OpenAPI document at
+  `/docs/api/v1/openapi`). It MUST NOT re-implement rules the server already enforces.
+- The app uses the **same concepts and the same words** as the web app (account, vault, contact,
+  reminder, template, ...). A screen that exists on the web behaves the same way on Android unless
+  the spec states a mobile-specific reason to differ.
+- When a feature needs data or an action the API does not expose yet, the API is extended in the
+  Monica repository first. The app MUST NOT work around a missing endpoint (scraping, private
+  routes, duplicated logic).
+- Every spec starts by reading how the web app does it: its screens, its API endpoints
+  (`routes/api.php`, `resources/docs/api` in the Monica repository) and its wording.
+
 ## Core Principles
 
 ### I. Simplicity First
@@ -92,8 +110,8 @@ the day they ship.
   `/speckit-tasks` → `/speckit-implement`. Specs live in `specs/`.
 - `tasks.md` MUST list unit test and UI test tasks for every user story; a story is not done
   until its tests pass.
-- Work happens on branches and lands on `main` through pull requests. Direct pushes to `main`
-  are not allowed once the repository is published.
+- Work happens on branches and lands on `main` only through pull requests. Nothing is ever
+  committed or pushed directly to `main`, without exception.
 - CI (`.github/workflows/ci.yml`) MUST be green before merging: Spotless check, Android Lint,
   unit tests, debug and release builds, and instrumented tests on an emulator.
 - Coverage gate: Kover reports MUST be produced in CI and fail the build when non-UI coverage
@@ -113,4 +131,4 @@ the day they ship.
 - Versioning follows semantic versioning: MAJOR for removing or redefining a principle, MINOR for
   adding a principle or materially expanding guidance, PATCH for wording and clarifications.
 
-**Version**: 1.0.0 | **Ratified**: 2026-11-25 | **Last Amended**: 2026-11-25
+**Version**: 1.1.0 | **Ratified**: 2026-11-25 | **Last Amended**: 2026-11-25

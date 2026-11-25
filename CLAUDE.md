@@ -1,6 +1,14 @@
 # Monica Android
 
-Native Android client for Monica (personal CRM). Kotlin, Jetpack Compose, Material 3.
+The Android version of the Monica web app ([monicahq/monica](https://github.com/monicahq/monica),
+usually checked out next to this repo in `../monica`). Kotlin, Jetpack Compose, Material 3.
+
+- Goal: every feature of the web app over time, plus mobile-specific ones.
+- The server is the source of truth. The app uses only its JSON API (`/api/v1`, Sanctum tokens,
+  OpenAPI at `/docs/api/v1/openapi`). Missing endpoint? It is added to the Monica API first.
+- Same concepts and words as the web app (account, vault, contact, reminder, template...).
+- Before specifying a feature, read how the web app does it: screens, `routes/api.php`,
+  `resources/docs/api` and wording in the Monica repo.
 
 **The rules live in `.specify/memory/constitution.md`. Read it before planning or writing code.**
 Summary of what it demands:
@@ -28,7 +36,8 @@ Follow the `definition-of-done` skill. In short:
 CI (`.github/workflows/ci.yml`) runs all of these plus instrumented tests on an emulator.
 
 ## Commits
-Follow the `commits` skill: Conventional Commits `type(scope): sentence`, branches
+NEVER commit or push to `main`: always a dated branch and a pull request (enforced by a GitHub
+ruleset and `.claude/hooks/block-push-to-main.sh`). Follow the `commits` skill: Conventional Commits `type(scope): sentence`, branches
 `YYYY-MM-DD-name`, and NEVER mention Claude, AI or an assistant in commits, PRs or comments
 (no `Co-Authored-By` trailer).
 

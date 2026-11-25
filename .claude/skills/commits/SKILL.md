@@ -50,8 +50,11 @@ description: Conventions for commit messages, pull request titles and descriptio
 
 ## Branches
 
-- Never commit directly to `main`. Create a branch from an up-to-date `main` named
-  `YYYY-MM-DD-{short-name}`, e.g. `2026-11-25-contact-list`.
+- You MUST NEVER commit or push to `main`, under any circumstance, even for a one-line fix or a
+  documentation change. Every change goes through a branch and a pull request. GitHub enforces it
+  with a ruleset, and a local hook blocks `git push` to `main`.
+- Create a branch from an up-to-date `main` named `YYYY-MM-DD-{short-name}`,
+  e.g. `2026-11-25-contact-list`, before the first edit of a new task.
 - Push only when the user asks for it.
 
 ## Pull requests
