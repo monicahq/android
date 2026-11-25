@@ -1,6 +1,7 @@
 installed:
 - archive
 - assess
+- branch
 - bug
 - companion
 settings:
@@ -14,6 +15,14 @@ hooks:
     priority: 10
     prompt: Execute speckit.companion.before-step?
     description: Save the specify start time until its folder exists
+    condition: null
+  - extension: branch
+    command: speckit.branch.start
+    enabled: true
+    optional: false
+    priority: 10
+    prompt: Execute speckit.branch.start?
+    description: Create the feature branch from an up-to-date main
     condition: null
   before_plan:
   - extension: companion

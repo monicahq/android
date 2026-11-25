@@ -54,7 +54,8 @@ description: Conventions for commit messages, pull request titles and descriptio
   documentation change. Every change goes through a branch and a pull request. GitHub enforces it
   with a ruleset, and a local hook blocks `git push` to `main`.
 - Create a branch from an up-to-date `main` named `YYYY-MM-DD-{short-name}`,
-  e.g. `2026-11-25-contact-list`, before the first edit of a new task.
+  e.g. `2026-11-25-contact-list`, before the first edit of a new task. `/speckit-specify` does it
+  automatically through its `speckit-branch-start` hook.
 - Push only when the user asks for it.
 
 ## Pull requests
