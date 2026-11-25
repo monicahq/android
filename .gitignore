@@ -19,3 +19,9 @@ captures/
 
 # Claude Code local settings
 .claude/settings.local.json
+
+# Spec Kit generated state
+__pycache__/
+.specify/extensions/.cache/
+.specify/extensions/*/.specify-dev/
+specs/**/.spec-context.json
