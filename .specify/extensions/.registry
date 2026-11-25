@@ -80,6 +80,20 @@
       },
       "registered_skills": [],
       "installed_at": "2026-11-25T21:57:53.609702+00:00"
+    },
+    "branch": {
+      "version": "1.0.0",
+      "source": "local",
+      "manifest_hash": "sha256:75170219fa5e9e6a4ea450c9268b8049c8c3c5238552a57900cb73c0f6e974c7",
+      "enabled": true,
+      "priority": 10,
+      "registered_commands": {
+        "claude": [
+          "speckit.branch.start"
+        ]
+      },
+      "registered_skills": [],
+      "installed_at": "2026-11-25T22:18:57.909636+00:00"
     }
   }
 }

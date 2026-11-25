@@ -52,5 +52,7 @@ ruleset and `.claude/hooks/block-push-to-main.sh`). Follow the `commits` skill: 
 
 ## Workflow
 Spec Kit: `/speckit-specify` → `/speckit-clarify` → `/speckit-plan` → `/speckit-tasks` →
-`/speckit-implement`. Specs go in `specs/`. Update `README.md` / `docs/` when a feature changes
+`/speckit-implement`. `/speckit-specify` always starts with the `speckit-branch-start` hook, which
+updates `main` and creates a `YYYY-MM-DD-name` branch from it (local extension in
+`tools/spec-kit/branch`). If it refuses (uncommitted changes, existing branch), stop and ask. Specs go in `specs/`. Update `README.md` / `docs/` when a feature changes
 how the app is built, configured or used.

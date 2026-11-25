@@ -33,7 +33,7 @@ official Android best practices, everything unit tested, every screen UI tested,
 This repo uses [Spec Kit](https://github.com/github/spec-kit):
 
 1. `/speckit-constitution`: project principles (once)
-2. `/speckit-specify`: describe a feature
+2. `/speckit-specify`: describe a feature (it first updates `main` and creates a dated branch from it)
 3. `/speckit-clarify` (optional), then `/speckit-plan`
 4. `/speckit-tasks`, then `/speckit-implement`
 
