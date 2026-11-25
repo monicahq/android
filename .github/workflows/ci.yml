@@ -77,6 +77,10 @@ jobs:
     name: Instrumented tests
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      API_LEVEL: 35
+      TARGET: aosp_atd
+      ARCH: x86_64
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup
@@ -87,14 +91,41 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
+      # Compile the app and test APKs before the emulator starts, so the emulator step only installs and runs.
+      - name: Build test APKs
+        run: ./gradlew assembleDebug assembleDebugAndroidTest
+
+      # A booted emulator snapshot is cached, so later runs resume it instead of cold booting.
+      - name: Restore emulator snapshot
+        id: avd-cache
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: avd-${{ env.API_LEVEL }}-${{ env.TARGET }}-${{ env.ARCH }}
+
+      - name: Create emulator snapshot
+        if: steps.avd-cache.outputs.cache-hit != 'true'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ env.API_LEVEL }}
+          target: ${{ env.TARGET }}
+          arch: ${{ env.ARCH }}
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: false
+          script: echo "Generated emulator snapshot."
+
       - name: Run instrumented tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 35
-          target: google_apis
-          arch: x86_64
+          api-level: ${{ env.API_LEVEL }}
+          target: ${{ env.TARGET }}
+          arch: ${{ env.ARCH }}
+          force-avd-creation: false
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: ./gradlew connectedDebugAndroidTest
 
       - name: Upload test report
