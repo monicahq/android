@@ -1,0 +1,12 @@
+name: Set up build environment
+description: Install JDK 21 and Gradle with caching
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-java@v6
+      with:
+        distribution: temurin
+        java-version: 21
+
+    - uses: gradle/actions/setup-gradle@v6

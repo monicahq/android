@@ -20,11 +20,26 @@ Summary of what it demands:
 - `com.monicahq.android`, minSdk 28, compileSdk 37.2, targetSdk 37, JDK 21 via `mise.toml`
 
 ## Before considering a change done
+Follow the `definition-of-done` skill. In short:
 ```sh
 ./gradlew spotlessApply lintDebug testDebugUnitTest assembleDebug
 ./gradlew connectedDebugAndroidTest   # when UI changed and a device/emulator is available
 ```
 CI (`.github/workflows/ci.yml`) runs all of these plus instrumented tests on an emulator.
+
+## Commits
+Follow the `commits` skill: Conventional Commits `type(scope): sentence`, branches
+`YYYY-MM-DD-name`, and NEVER mention Claude, AI or an assistant in commits, PRs or comments
+(no `Co-Authored-By` trailer).
+
+## Skills
+- `definition-of-done`: checklist before every commit and PR
+- `commits`: commit messages, branches, pull requests
+- `tests`: how to write unit and UI tests
+- `feature-documentator`: keep `docs/FEATURES.md` up to date after every feature
+- `take-screenshot`: capture the app on an emulator for pull requests
+- Spec Kit extensions: `speckit-bug-*` (bug triage), `speckit-assess-*` (evaluate an idea
+  before specifying it), `speckit-archive-run` (archive a merged spec), `speckit-companion-*`
 
 ## Workflow
 Spec Kit: `/speckit-specify` → `/speckit-clarify` → `/speckit-plan` → `/speckit-tasks` →

@@ -28,7 +28,7 @@ official Android best practices, everything unit tested, every screen UI tested,
 
 ## Spec-driven development
 
-This repo uses [Spec Kit](https://github.com/github/spec-kit). With Claude Code:
+This repo uses [Spec Kit](https://github.com/github/spec-kit):
 
 1. `/speckit-constitution`: project principles (once)
 2. `/speckit-specify`: describe a feature
