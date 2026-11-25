@@ -1,6 +1,8 @@
 # Monica for Android
 
-Native Android client for [Monica](https://github.com/monicahq/monica), written in Kotlin with Jetpack Compose.
+The Android version of [Monica](https://github.com/monicahq/monica), the open source personal CRM.
+It aims to offer every feature of the web app, plus what only makes sense on a phone, and talks to
+any Monica instance through its public API. Written in Kotlin with Jetpack Compose.
 
 ## Requirements
 
