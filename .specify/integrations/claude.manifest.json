@@ -11,6 +11,12 @@
     ".claude/skills/speckit-plan/SKILL.md": "9e34e984d94fb7ebb26113ee225edeeb97fc18875daccab25063568a3f9e8cd6",
     ".claude/skills/speckit-checklist/SKILL.md": "abe63b5a967e6de8e144161fb7e929e86416e12233bf1a2f24fd4a8d3da46c24",
     ".claude/skills/speckit-specify/SKILL.md": "55aaefc47246d8af937d4b114dca1a4d85edfd21b0ff4688e02bf4d10e8bc98e",
-    ".claude/skills/speckit-tasks/SKILL.md": "863be3d6738b8e82bd95fa634a53dbdda3017cc049c6c7f47b21c66c87e68c5f"
+    ".claude/skills/speckit-tasks/SKILL.md": "863be3d6738b8e82bd95fa634a53dbdda3017cc049c6c7f47b21c66c87e68c5f",
+    ".specify/events.py": "e78e7edb7dd8c5d3a86d61386eb4313ed5b1f8eb6891e496a04b2a53ff7ea984",
+    ".claude/settings.json": "f495646c961556deffdea93d5e1c4ad7b0fe5a79f94aa99c589c5521db93413b"
+  },
+  "ownership_modes": {
+    ".specify/events.py": "shared",
+    ".claude/settings.json": "partial"
   }
 }
