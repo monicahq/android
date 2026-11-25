@@ -14,40 +14,59 @@ permissions:
   contents: read
 
 jobs:
-  build:
-    name: Format, lint, unit tests, build
+  format:
+    name: Format
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
-
-      - uses: actions/setup-java@v6
-        with:
-          distribution: temurin
-          java-version: 21
-
-      - uses: gradle/actions/setup-gradle@v6
-
+      - uses: ./.github/actions/setup
       - name: Check formatting (ktlint via Spotless)
         run: ./gradlew spotlessCheck
 
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
       - name: Android Lint
         run: ./gradlew lintDebug
-
-      - name: Unit tests
-        run: ./gradlew testDebugUnitTest
-
-      - name: Build debug and release
-        run: ./gradlew assembleDebug assembleRelease
-
-      - name: Upload reports
+      - name: Upload lint report
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: reports
-          path: app/build/reports/
+          name: lint-report
+          path: app/build/reports/lint-results-debug.*
           if-no-files-found: ignore
 
+  unit-tests:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+      - name: Unit tests
+        run: ./gradlew testDebugUnitTest
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: unit-test-report
+          path: app/build/reports/tests/
+          if-no-files-found: ignore
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+      - name: Build debug and release
+        run: ./gradlew assembleDebug assembleRelease
       - name: Upload debug APK
         uses: actions/upload-artifact@v7
         with:
@@ -55,19 +74,12 @@ jobs:
           path: app/build/outputs/apk/debug/*.apk
 
   instrumented-tests:
-    name: Instrumented tests (emulator)
+    name: Instrumented tests
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    needs: build
     steps:
       - uses: actions/checkout@v7
-
-      - uses: actions/setup-java@v6
-        with:
-          distribution: temurin
-          java-version: 21
-
-      - uses: gradle/actions/setup-gradle@v6
+      - uses: ./.github/actions/setup
 
       - name: Enable KVM
         run: |
@@ -85,10 +97,10 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: ./gradlew connectedDebugAndroidTest
 
-      - name: Upload test reports
+      - name: Upload test report
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: androidTest-reports
+          name: instrumented-test-report
           path: app/build/reports/androidTests/
           if-no-files-found: ignore
