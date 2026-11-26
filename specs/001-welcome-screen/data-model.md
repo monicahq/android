@@ -8,10 +8,21 @@ The Monica server the app will talk to.
 
 | Field | Type | Rule |
 | --- | --- | --- |
-| url | text | Absolute `http` or `https` address. In this feature always the default, `https://app.monicahq.com`. |
+| url | text | Absolute `http` or `https` address with a host, no trailing slash. Default `https://app.monicahq.com`. Stored on the device (DataStore key `instance_url`); absent means default. |
 | host (derived) | text | The url without its scheme and without a trailing slash: `https://app.monicahq.com/` → `app.monicahq.com`. Keeps a port or a path (`http://localhost:8000/monica` → `localhost:8000/monica`). |
 
-Changing the instance (the sheet of the design) and storing the choice are a later feature.
+**Normalisation of what the person types** (`normalizeInstanceUrl`): trim spaces; empty → default;
+no `://` → prefix `https://`; remove trailing slashes; reject (null) unless the scheme is `http` or
+`https`, there is a host and there is no space.
+
+## Welcome UI state
+
+| Field | Type | Rule |
+| --- | --- | --- |
+| instanceUrl | text | The saved `Instance.url`. |
+| sheet | InstanceSheetState or none | None when the sheet is closed. |
+| sheet.draft | text | What the field shows; starts as `instanceUrl` when the sheet opens. |
+| sheet.isError | yes/no | True after a save with an invalid draft; false again as soon as the draft changes. |
 
 ## Strings
 
@@ -27,5 +38,14 @@ Every text of the screen, in each supported language. Keys are shared by all lan
 | `welcome_instance` | Instance: %1$s | Instance&#160;: %1$s |
 | `welcome_instance_settings` | Instance settings | Paramètres de l'instance |
 | `welcome_illustration` | A panda sitting in the grass, waving | Un panda assis dans l'herbe qui fait coucou |
+
+| `instance_sheet_title` | Instance URL | URL de l'instance |
+| `instance_sheet_description` | The address of the Monica server the app connects to. Keep the default to use the hosted service, or enter the address of your own instance. | L'adresse du serveur Monica auquel l'app se connecte. Laissez la valeur par défaut pour utiliser le service hébergé, ou saisissez celle de votre propre instance. |
+| `instance_sheet_address` | Address | Adresse |
+| `instance_sheet_placeholder` | https://monica.example.com | https://monica.exemple.fr |
+| `instance_sheet_invalid` | Enter an address like https://monica.example.com | Saisissez une adresse comme https://monica.exemple.fr |
+| `instance_sheet_reset` | Reset to default | Rétablir par défaut |
+| `instance_sheet_cancel` | Cancel | Annuler |
+| `instance_sheet_save` | Save | Sauvegarder |
 
 The existing placeholder string `welcome` ("Welcome to Monica") is removed.

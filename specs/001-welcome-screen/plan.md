@@ -8,7 +8,9 @@
 
 Show the welcome screen of the `Welcome Android.dc.html` design as the app's first screen: instance
 settings button, Monica logo and name, panda illustration, title, description, "Sign up" and
-"Log in" buttons, and the current instance line. Nothing is wired yet: every control is a no-op.
+"Log in" buttons, and the current instance line. "Sign up" and "Log in" are no-ops. The settings
+button and the instance line open the design's instance sheet, which saves the address on the
+device (User Story 4, added after the first plan: see research R11–R15).
 The screen ships in English (default and fallback) and French, declared to Android's per-app
 language setting. The current dynamic-colour theme is replaced by the Monica design system
 palette (light and dark) mapped onto Material 3 colour roles. Being the first feature, it also
@@ -21,9 +23,11 @@ automated accessibility checks that principle VII requires in UI tests.
 
 **Primary Dependencies**: Jetpack Compose (BOM 2026.11.01), Material 3, Activity Compose. New:
 `androidx.compose.ui:ui-test-junit4-accessibility` (androidTest, from the BOM) and the Kover
-Gradle plugin 0.9.11 (build only).
+Gradle plugin 0.9.11 (build only). For User Story 4: `datastore-preferences` 1.3.0,
+`lifecycle-viewmodel-compose` and `lifecycle-runtime-compose` (lifecycle 2.11.1), and
+`kotlinx-coroutines-test` 1.11.0 (tests).
 
-**Storage**: N/A (the instance address is a constant in this feature)
+**Storage**: DataStore Preferences (the instance address)
 
 **Testing**: JUnit 4 on the JVM (`app/src/test`), Compose UI tests with the Accessibility Test
 Framework on an emulator (`app/src/androidTest`), Kover for coverage
@@ -45,9 +49,9 @@ Framework on an emulator (`app/src/androidTest`), Kover for coverage
 | Principle | Status | How this plan complies |
 | --- | --- | --- |
 | Product context | PASS | No server call; wording reuses the web app's (`Sign up` / `Inscription`, `Log in` / `Connexion`, `Instance settings` / `Paramètres de l'instance`); default instance `https://app.monicahq.com`. |
-| I. Simplicity | PASS | No ViewModel, repository or navigation library: the screen has no state and no data yet (see research R1). One pure function for the host. No new runtime dependency. |
+| I. Simplicity | PASS | One ViewModel and one repository for the sheet (R11, R12); no Hilt, a small application container (R13); no navigation library. New libraries justified in Complexity Tracking. |
 | II. Android practices | PASS | Stateless `WelcomeScreen` taking its values and callbacks; Material 3 components; strings in resources; edge-to-edge with insets. |
-| III. Unit tests | PASS | `instanceHost()` and the string-parity guard are unit tested; Kover gate set up at 80% for non-UI code. |
+| III. Unit tests | PASS | `instanceHost()`, `normalizeInstanceUrl()`, `InstanceRepository`, `WelcomeViewModel` (every state and event) and the string-parity guard are unit tested; Kover gate at 80% for non-UI code. |
 | IV. UI tests | PASS | Compose UI tests for every element, every control, French, dark theme, large font; one end-to-end test through `MainActivity`. |
 | V. Native only | PASS | Compose, vector drawables, no WebView, no web assets at runtime. |
 | VI. Multilingual | PASS | `values/` (English) and `values-fr/`; locale config generated; parity test fails the build when a key is missing in a language. |
@@ -78,11 +82,15 @@ app/
 └── src/
     ├── main/
     │   ├── java/com/monicahq/android/
-    │   │   ├── MainActivity.kt           # shows WelcomeScreen with no-op callbacks
+    │   │   ├── MonicaApplication.kt      # creates the DataStore and the repository once
+    │   │   ├── MainActivity.kt           # shows WelcomeRoute
     │   │   ├── instance/
-    │   │   │   └── Instance.kt           # DEFAULT_INSTANCE_URL, instanceHost()
+    │   │   │   ├── Instance.kt           # DEFAULT_INSTANCE_URL, instanceHost(), normalizeInstanceUrl()
+    │   │   │   └── InstanceRepository.kt # saved address (DataStore)
     │   │   ├── welcome/
-    │   │   │   └── WelcomeScreen.kt      # stateless screen + previews
+    │   │   │   ├── WelcomeViewModel.kt   # WelcomeUiState, InstanceSheetState, events
+    │   │   │   ├── WelcomeScreen.kt      # WelcomeRoute + stateless screen + previews
+    │   │   │   └── InstanceSheet.kt      # the instance bottom sheet
     │   │   └── ui/theme/
     │   │       ├── Color.kt              # Monica design system tokens
     │   │       ├── Type.kt               # Monica type scale on Material 3 roles
@@ -110,4 +118,8 @@ every API call will reuse it.
 
 ## Complexity Tracking
 
-No violation to justify.
+| Addition | Why needed | Simpler alternative rejected because |
+| --- | --- | --- |
+| DataStore Preferences | The address must survive closing the app (FR-014) | `SharedPreferences` is synchronous and discouraged |
+| lifecycle-viewmodel-compose, lifecycle-runtime-compose | `viewModel()` and `collectAsStateWithLifecycle()`, required by principle II | none: these are the documented APIs |
+| kotlinx-coroutines-test | Testing the ViewModel and repository (principle III) | none |

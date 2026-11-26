@@ -126,3 +126,49 @@
   feature"). UI code is covered by UI tests, which Kover's JVM measure cannot see.
 - **Alternatives considered**: a separate "Coverage" CI job: rejected, it would need a ruleset
   change for no benefit.
+
+## R11. State of the screen once the instance sheet exists (User Story 4)
+
+- **Decision**: R1 no longer holds: the screen now has state (the saved address, whether the sheet
+  is open, the draft, the error). `WelcomeViewModel` exposes one `StateFlow<WelcomeUiState>` built
+  by combining the repository's address with the sheet state; `WelcomeRoute` collects it with
+  `collectAsStateWithLifecycle()` and passes it to the stateless `WelcomeScreen`.
+- **Rationale**: principle II's reference shape; the sheet state survives rotation in the
+  ViewModel.
+- **Alternatives considered**: `rememberSaveable` state in the composable: rejected, saving the
+  address needs a coroutine and a repository, which belong in a ViewModel.
+
+## R12. Storing the address: DataStore Preferences
+
+- **Decision**: `androidx.datastore:datastore-preferences` 1.3.0, one key `instance_url`, behind
+  `InstanceRepository` (`url: Flow<String>`, `suspend fun setUrl(url)`). Absent key = default.
+- **Rationale**: the library the constitution names for preferences; asynchronous, no main-thread
+  disk access, testable on the JVM with a file in a temporary folder.
+- **Alternatives considered**: `SharedPreferences`: synchronous API, discouraged by Android.
+
+## R13. Providing the repository: a small application container, no Hilt
+
+- **Decision**: `MonicaApplication` creates the DataStore and the `InstanceRepository` once
+  (`by lazy`); `WelcomeViewModel.Factory` reads them through `APPLICATION_KEY`, as in Android's
+  "ViewModel with dependencies" guide.
+- **Rationale**: one dependency does not justify Hilt's annotation processing and setup
+  (principle I). Hilt comes when several screens share several dependencies.
+
+## R14. Normalising and validating the address
+
+- **Decision**: a pure function `normalizeInstanceUrl(input): String?` in `instance/Instance.kt`:
+  trim; empty → default; no `://` → prefix `https://`; remove trailing slashes; return `null`
+  unless `java.net.URI` parses it with an `http`/`https` scheme, a host and no space. The
+  ViewModel keeps the sheet open with `isError` when it returns `null`.
+- **Rationale**: unit tested without Android; the design has no error state, so the field's own
+  error line (Material `supportingText`, announced as an error) is used.
+
+## R15. Sheet component
+
+- **Decision**: Material 3 `ModalBottomSheet` (scrim, drag handle, swipe and back to dismiss,
+  28 dp top corners as in the design), content in a `verticalScroll` column. Buttons: `TextButton`
+  for "Reset to default" and "Cancel", `Button` for "Save", in a `FlowRow` so they wrap at large
+  font sizes. The field is an `OutlinedTextField` with a `label`, `placeholder`,
+  `KeyboardType.Uri` and `ImeAction.Done` (saves).
+- **Rationale**: the platform's sheet already handles dismissal gestures, focus trapping and
+  TalkBack's dialog semantics.

@@ -19,6 +19,19 @@ internal val MonicaTypography =
                 fontWeight = FontWeight.SemiBold,
                 letterSpacing = (-0.03).em,
             ),
+        titleLarge =
+            Default.titleLarge.copy(
+                fontSize = 20.sp,
+                lineHeight = 28.sp,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 0.sp,
+            ),
+        bodyMedium =
+            Default.bodyMedium.copy(
+                fontSize = 14.sp,
+                lineHeight = 20.sp,
+                letterSpacing = 0.sp,
+            ),
         bodyLarge =
             Default.bodyLarge.copy(
                 fontSize = 16.sp,

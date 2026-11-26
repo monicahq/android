@@ -9,4 +9,13 @@
     <string name="welcome_instance">Instance: %1$s</string>
     <string name="welcome_instance_settings">Instance settings</string>
     <string name="welcome_illustration">A panda sitting in the grass, waving</string>
+
+    <string name="instance_sheet_title">Instance URL</string>
+    <string name="instance_sheet_description">The address of the Monica server the app connects to. Keep the default to use the hosted service, or enter the address of your own instance.</string>
+    <string name="instance_sheet_address">Address</string>
+    <string name="instance_sheet_placeholder">https://monica.example.com</string>
+    <string name="instance_sheet_invalid">Enter an address like https://monica.example.com</string>
+    <string name="instance_sheet_reset">Reset to default</string>
+    <string name="instance_sheet_cancel">Cancel</string>
+    <string name="instance_sheet_save">Save</string>
 </resources>

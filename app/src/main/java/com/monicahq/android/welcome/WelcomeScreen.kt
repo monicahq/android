@@ -27,6 +27,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -50,34 +51,64 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.monicahq.android.R
+import com.monicahq.android.instance.instanceHost
 import com.monicahq.android.ui.theme.MonicaTheme
 import com.monicahq.android.ui.theme.WordmarkStyle
 
 private const val ILLUSTRATION_ASPECT_RATIO = 880f / 530f
 
+/** Connects [WelcomeScreen] to its [WelcomeViewModel]. Signing up and logging in come later. */
+@Composable
+fun WelcomeRoute(viewModel: WelcomeViewModel = viewModel(factory = WelcomeViewModel.Factory)) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    WelcomeScreen(
+        uiState = uiState,
+        onSignUp = {},
+        onLogIn = {},
+        onOpenInstanceSheet = viewModel::openInstanceSheet,
+        onDraftChange = viewModel::onDraftChange,
+        onResetDraft = viewModel::resetDraft,
+        onDismissInstanceSheet = viewModel::dismissInstanceSheet,
+        onSaveInstance = viewModel::saveInstance,
+    )
+}
+
 /**
  * The first screen of the app: who Monica is, and the ways in (sign up, log in, choose the
- * instance). Stateless: it shows what it is given and reports taps through the callbacks.
- *
- * @param instanceHost the address of the current instance, as shown to people (`app.monicahq.com`).
+ * instance). Stateless: it shows [uiState] and reports taps through the callbacks.
  */
 @Composable
 fun WelcomeScreen(
-    instanceHost: String,
+    uiState: WelcomeUiState,
     onSignUp: () -> Unit,
     onLogIn: () -> Unit,
-    onInstanceSettings: () -> Unit,
+    onOpenInstanceSheet: () -> Unit,
+    onDraftChange: (String) -> Unit,
+    onResetDraft: () -> Unit,
+    onDismissInstanceSheet: () -> Unit,
+    onSaveInstance: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     // Surface provides the page colour and, as content colour, the ink colour that icons,
     // ripples and focus highlights use.
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         WelcomeContent(
-            instanceHost = instanceHost,
+            instanceHost = instanceHost(uiState.instanceUrl),
             onSignUp = onSignUp,
             onLogIn = onLogIn,
-            onInstanceSettings = onInstanceSettings,
+            onInstanceSettings = onOpenInstanceSheet,
+        )
+    }
+    uiState.sheet?.let {
+        InstanceSheet(
+            state = it,
+            onDraftChange = onDraftChange,
+            onReset = onResetDraft,
+            onDismiss = onDismissInstanceSheet,
+            onSave = onSaveInstance,
         )
     }
 }
@@ -291,10 +322,14 @@ private fun InstanceLine(
 private fun WelcomeScreenPreview() {
     MonicaTheme {
         WelcomeScreen(
-            instanceHost = "app.monicahq.com",
+            uiState = WelcomeUiState(),
             onSignUp = {},
             onLogIn = {},
-            onInstanceSettings = {},
+            onOpenInstanceSheet = {},
+            onDraftChange = {},
+            onResetDraft = {},
+            onDismissInstanceSheet = {},
+            onSaveInstance = {},
         )
     }
 }

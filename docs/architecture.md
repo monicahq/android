@@ -71,8 +71,13 @@ fun ContactsScreen(uiState: ContactsUiState, onContactClick: (Long) -> Unit) { /
 - Repositories expose `Flow` for observable data and `suspend` functions for one-shot actions.
 - Inject `CoroutineDispatcher`s; never call `Dispatchers.IO` directly inside a class.
 - All user-visible text in `res/values/strings.xml`; give meaningful elements accessibility semantics.
-- A screen with no state yet (like the welcome screen) is only the stateless composable, called
-  from `MainActivity`; the `Route` and `ViewModel` arrive with the first state to hold.
+- `MonicaApplication` creates the long-lived objects (DataStore, repositories) once, and
+  ViewModel factories read them through `APPLICATION_KEY` (see `WelcomeViewModel.Factory`). Hilt
+  replaces this container when several screens share several dependencies.
+- Settings kept on the device (like the instance address) live in DataStore Preferences, behind a
+  repository (`InstanceRepository`).
+- Keep logic out of `*Screen.kt` and `*Sheet.kt` files: they are UI only and excluded from the
+  coverage measure.
 
 ## Languages
 

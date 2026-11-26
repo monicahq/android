@@ -105,7 +105,35 @@ Compose UI tests with automated accessibility checks for the screen.
 
 ---
 
-## Phase 6: Polish & cross-cutting concerns
+## Phase 6: User Story 4 - Choose the Monica instance (Priority: P4)
+
+**Goal**: the settings button and the instance line open the instance sheet; the saved address survives restarts.
+
+**Independent test**: open the sheet, save `monica.example.com`, restart the app: the instance line shows `monica.example.com`.
+
+### Tests for User Story 4
+
+- [x] T028 [P] [US4] Test `normalizeInstanceUrl()` against the rules of `data-model.md` `Instance.url` (empty, no scheme, trailing slash, port and path, http, invalid scheme, spaces, no host) in `app/src/test/java/com/monicahq/android/instance/InstanceTest.kt`
+- [x] T029 [P] [US4] Test `InstanceRepository` (default when nothing is saved, saved address read back) with a DataStore in a temporary folder in `app/src/test/java/com/monicahq/android/instance/InstanceRepositoryTest.kt`
+- [x] T030 [P] [US4] Test every state and event of `WelcomeViewModel` (`data-model.md` Welcome UI state: `sheet.draft`, `sheet.isError`) with a fake repository in `app/src/test/java/com/monicahq/android/welcome/WelcomeViewModelTest.kt`
+- [x] T031 [P] [US4] Add sheet UI tests (opens from both controls, every element, typing, reset, cancel, save, error, French, accessibility checks, large font) to `app/src/androidTest/java/com/monicahq/android/welcome/WelcomeScreenTest.kt`
+- [x] T032 [P] [US4] Add an end-to-end test (save an address, recreate the activity, the line shows it) in `app/src/androidTest/java/com/monicahq/android/MainActivityTest.kt`
+
+### Implementation for User Story 4
+
+- [x] T033 [US4] Add `datastore-preferences`, `lifecycle-viewmodel-compose`, `lifecycle-runtime-compose` and `kotlinx-coroutines-test` to `gradle/libs.versions.toml` and `app/build.gradle.kts`; exclude `*SheetKt` from Kover
+- [x] T034 [US4] Implement `normalizeInstanceUrl()` in `app/src/main/java/com/monicahq/android/instance/Instance.kt` and `InstanceRepository` in `app/src/main/java/com/monicahq/android/instance/InstanceRepository.kt`
+- [x] T035 [US4] Create `MonicaApplication` in `app/src/main/java/com/monicahq/android/MonicaApplication.kt` and declare it in `app/src/main/AndroidManifest.xml`
+- [x] T036 [US4] Implement `WelcomeViewModel`, `WelcomeUiState` and `InstanceSheetState` in `app/src/main/java/com/monicahq/android/welcome/WelcomeViewModel.kt`
+- [x] T037 [US4] Add the sheet strings of `data-model.md` (Strings table) to `app/src/main/res/values/strings.xml` and `app/src/main/res/values-fr/strings.xml`
+- [x] T038 [US4] Implement the sheet of `contracts/welcome-screen.md` in `app/src/main/java/com/monicahq/android/welcome/InstanceSheet.kt`, and `WelcomeRoute` plus the new `WelcomeScreen` signature in `app/src/main/java/com/monicahq/android/welcome/WelcomeScreen.kt`; show `WelcomeRoute` from `MainActivity.kt`
+- [x] T039 [US4] Update `docs/architecture.md`, `docs/FEATURES.md` and `README.md` if needed; run the definition of done and the `accessibility-reviewer` agent
+
+**Checkpoint**: all four user stories work and are tested.
+
+---
+
+## Phase 7: Polish & cross-cutting concerns
 
 - [x] T023 [P] Resolve `TODO(COVERAGE_GATE)` in `.specify/memory/constitution.md` and describe Kover in `docs/testing.md`
 - [x] T024 [P] Document languages (per-app language, parity test) in `docs/architecture.md` and the welcome screen in `docs/FEATURES.md`
@@ -118,7 +146,7 @@ Compose UI tests with automated accessibility checks for the screen.
 ## Dependencies & execution order
 
 - Setup (Phase 1) → Foundational (Phase 2) → User stories → Polish.
-- US1 depends on Phase 2. US2 and US3 depend on US1 (they test and extend the same screen) but not on each other.
+- US1 depends on Phase 2. US2, US3 and US4 depend on US1 (they test and extend the same screen) but not on each other.
 - Within a story, tests are written first and fail before the implementation.
 
 ### Parallel opportunities

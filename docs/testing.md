@@ -62,8 +62,17 @@ a screen needs (like `welcome/Highlight.kt`) goes in its own file, with its own 
 
 `StringResourcesParityTest` fails when a key or a placeholder is missing in one of the
 `values-*/strings.xml` files. UI tests show a screen in another language without changing the
-device's by providing a `LocalContext` and `LocalConfiguration` for that locale (see
-`WelcomeScreenTest`).
+device's by providing `LocalResources` and `LocalConfiguration` for that locale (see
+`WelcomeScreenTest`). Keep the real `LocalContext`: bottom sheets and dialogs open their own
+window, which needs the activity's context.
+
+## ViewModels
+
+- `MainDispatcherRule` (in `src/test`) runs `viewModelScope` on a test dispatcher.
+- Collect `uiState` in `backgroundScope` before checking `uiState.value`, as the screen does
+  (`SharingStarted.WhileSubscribed` only starts with a collector). See `WelcomeViewModelTest`.
+- `FakePreferencesDataStore` replaces DataStore in memory; repository tests use a real DataStore in
+  a `TemporaryFolder`.
 
 ## Running locally
 
