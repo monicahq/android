@@ -48,14 +48,21 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup
-      - name: Unit tests
-        run: ./gradlew testDebugUnitTest
+      - name: Unit tests and coverage gate
+        run: ./gradlew testDebugUnitTest koverVerifyDebug koverHtmlReportDebug
       - name: Upload test report
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: unit-test-report
           path: app/build/reports/tests/
+          if-no-files-found: ignore
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-report
+          path: app/build/reports/kover/
           if-no-files-found: ignore
 
   build:

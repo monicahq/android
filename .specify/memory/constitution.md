@@ -49,8 +49,8 @@ When in doubt, do what it recommends.
   so tests can control them. No `GlobalScope`, no blocking calls on the main thread.
 - **Kotlin**: idiomatic Kotlin (immutability, `data`/`sealed` types, null safety). The `!!`
   operator MUST NOT be used in production code.
-- **Resources**: all user-facing text lives in `strings.xml`. Interactive and meaningful visual
-  elements MUST have accessibility semantics (content descriptions, touch targets ≥ 48dp).
+- **Resources**: all user-facing text lives in string resources (see Principle VI).
+  Accessibility rules are in Principle VII.
 
 Rationale: following the platform's documented patterns makes the code predictable for any
 Android developer and keeps it compatible with Jetpack tooling.
@@ -91,6 +91,47 @@ Rationale: users experience the app through the UI; a screen that is not tested 
 Rationale: a native app gives the best user experience and lets us adopt new Android features
 the day they ship.
 
+### VI. Multilingual From the Start
+
+- Every user-facing text, including accessibility labels, lives in string resources
+  (`values/strings.xml` for English, `values-<lang>/strings.xml` for each translation). No text is
+  written directly in code.
+- English is the default language and the fallback for every missing translation. French is
+  provided from the first screen. The long-term goal is parity with the languages of the web app.
+- A change that adds or modifies a string MUST update every supported language in the same pull
+  request.
+- Wording reuses the web app's English text and its existing translations (`lang/*.json` in the
+  Monica repository) whenever the same text exists there.
+- The app declares its languages to Android (per-app language setting). Plurals use plural
+  resources, and dates and numbers are formatted for the person's locale, never by hand.
+
+Rationale: retrofitting translations is far more expensive than starting with them, and Monica's
+users already read the web app in their own language.
+
+### VII. Accessible to Everybody (NON-NEGOTIABLE)
+
+WCAG 2.2 AA, applied to mobile, is a delivery condition for every screen, not a pass at the end of a
+project. Every screen a change touches MUST:
+
+- be fully usable with TalkBack: every control has a name, a role and a state, headings are marked
+  as headings, decorative images are hidden and meaningful ones described, and the reading order
+  follows the visual order;
+- be usable with Switch Access and a hardware keyboard: every action is reachable and the focus is
+  always visible;
+- never carry information by colour alone;
+- meet contrast of 4.5:1 for text and 3:1 for controls and focus indicators, in light and dark;
+- stay readable at the largest system font size and display size: text wraps, nothing is cut or
+  overlapping, content scrolls instead of shrinking;
+- give every touchable element a target of at least 48 by 48 dp;
+- respect the system setting that removes animations;
+- offer an alternative to any gesture-only action (swipe, long press, drag).
+
+Compose UI tests of a screen MUST run Android's automated accessibility checks, and a pull request
+that changes a screen MUST state how it was checked with TalkBack. See `docs/accessibility.md`.
+
+Rationale: Monica holds what people know about the people they love. Nobody should be locked out
+of their own memories because of how they use their phone.
+
 ## Technology Standards
 
 - **Language & build**: Kotlin (built into AGP 9), Gradle Kotlin DSL, JDK 21. All dependency
@@ -114,8 +155,9 @@ the day they ship.
   committed or pushed directly to `main`, without exception.
 - CI (`.github/workflows/ci.yml`) MUST be green before merging: Spotless check, Android Lint,
   unit tests, debug and release builds, and instrumented tests on an emulator.
-- Coverage gate: Kover reports MUST be produced in CI and fail the build when non-UI coverage
-  drops below 80% (TODO(COVERAGE_GATE): configure Kover with the first feature).
+- Coverage gate: Kover (`./gradlew koverVerifyDebug`, run by the CI "Unit tests" job) fails the
+  build when non-UI line coverage drops below 80%. Composables, `*Screen.kt` files, previews,
+  `MainActivity` and the theme are excluded: the UI tests cover them.
 - Documentation is part of done: public classes and non-obvious functions have KDoc explaining
   *why*, and `README.md` / `docs/` are updated when a feature changes how the app is built,
   configured, or used.
@@ -131,4 +173,4 @@ the day they ship.
 - Versioning follows semantic versioning: MAJOR for removing or redefining a principle, MINOR for
   adding a principle or materially expanding guidance, PATCH for wording and clarifications.
 
-**Version**: 1.1.0 | **Ratified**: 2026-11-25 | **Last Amended**: 2026-11-25
+**Version**: 1.3.1 | **Ratified**: 2026-11-25 | **Last Amended**: 2026-11-25

@@ -27,6 +27,7 @@ official Android best practices, everything unit tested, every screen UI tested,
 
 - [Architecture](docs/architecture.md): how screens, ViewModels and repositories fit together
 - [Testing](docs/testing.md): what to test and how
+- [Accessibility](docs/accessibility.md): mandatory rules and checks for every screen
 
 ## Spec-driven development
 

@@ -71,5 +71,22 @@ fun ContactsScreen(uiState: ContactsUiState, onContactClick: (Long) -> Unit) { /
 - Repositories expose `Flow` for observable data and `suspend` functions for one-shot actions.
 - Inject `CoroutineDispatcher`s; never call `Dispatchers.IO` directly inside a class.
 - All user-visible text in `res/values/strings.xml`; give meaningful elements accessibility semantics.
+- A screen with no state yet (like the welcome screen) is only the stateless composable, called
+  from `MainActivity`; the `Route` and `ViewModel` arrive with the first state to hold.
+
+## Languages
+
+- English lives in `res/values/strings.xml` (default and fallback), each translation in
+  `res/values-<lang>/strings.xml` with the same keys. French is provided.
+- `generateLocaleConfig` (in `app/build.gradle.kts`) lists these languages in Android 13+'s
+  per-app language setting; `res/resources.properties` says the default folder is English.
+- A text that includes a value uses one format string (`Instance: %1$s`), never concatenation, so
+  each language can place the value where its grammar wants it.
+
+## Theme
+
+`ui/theme` maps the Monica design system (shadcn-like greys, no accent colour, system sans) onto
+Material 3 colour and type roles, in light and dark. There is no dynamic colour. Use
+`MaterialTheme.colorScheme` and `MaterialTheme.typography` in screens, never raw colours.
 - Add a Jetpack library (Hilt, Room, Navigation, DataStore, WorkManager) only when a feature needs it,
   and justify it in the feature's `plan.md`.

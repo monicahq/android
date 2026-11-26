@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="welcome_title">Bienvenue dans Monica</string>
+    <string name="welcome_description">Monica vous aide à vous souvenir et à organiser vos relations et votre contexte de vie.</string>
+    <string name="welcome_sign_up">Inscription</string>
+    <string name="welcome_log_in">Connexion</string>
+    <string name="welcome_instance">Instance&#160;: %1$s</string>
+    <string name="welcome_instance_settings">Paramètres de l\'instance</string>
+    <string name="welcome_illustration">Un panda assis dans l\'herbe qui fait coucou</string>
+</resources>

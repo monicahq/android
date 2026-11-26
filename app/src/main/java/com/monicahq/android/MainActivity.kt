@@ -4,15 +4,10 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
+import com.monicahq.android.instance.DEFAULT_INSTANCE_URL
+import com.monicahq.android.instance.instanceHost
 import com.monicahq.android.ui.theme.MonicaTheme
+import com.monicahq.android.welcome.WelcomeScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -20,23 +15,15 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             MonicaTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(modifier = Modifier.padding(innerPadding))
-                }
+                // Nothing is wired yet: signing up, logging in and choosing the instance come in
+                // the next features.
+                WelcomeScreen(
+                    instanceHost = instanceHost(DEFAULT_INSTANCE_URL),
+                    onSignUp = {},
+                    onLogIn = {},
+                    onInstanceSettings = {},
+                )
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(modifier: Modifier = Modifier) {
-    Text(text = stringResource(R.string.welcome), modifier = modifier)
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun GreetingPreview() {
-    MonicaTheme {
-        Greeting()
     }
 }
