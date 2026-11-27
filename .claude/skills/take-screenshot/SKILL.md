@@ -1,12 +1,12 @@
 ---
 name: take-screenshot
-description: Take a screenshot of the app running on an Android emulator or device. Use whenever a task requires taking, inspecting or validating a screenshot of the app, in particular for a pull request that changes anything visible.
+description: Take a screenshot of the app running on an Android emulator or device. Use whenever a task requires taking, inspecting or validating a screenshot of the app. Pull requests do not require one.
 ---
 
 # Take a screenshot
 
 Screenshots are temporary review artifacts. They MUST stay outside the repository: write them to
-`/tmp/<feature>.png` and attach them to the pull request (see the `commits` skill).
+`/tmp/<feature>.png`. Attach one to a pull request only when asked (see the `commits` skill).
 
 ## 1. Have a device
 

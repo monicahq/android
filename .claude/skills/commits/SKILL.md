@@ -68,8 +68,8 @@ description: Conventions for commit messages, pull request titles and descriptio
   diff already shows.
 - A change visible on screen says, in a bullet, which accessibility checks were done (TalkBack,
   largest font, dark theme), following `docs/accessibility.md`.
-- A change visible on screen carries a screenshot from an emulator, attached with
-  `gh pr create --attach '/tmp/name.png#alt text'`. Screenshots are never committed.
+- Screenshots are not required. When one is added on request, it is attached with
+  `gh pr create --attach '/tmp/name.png#alt text'` and never committed.
 
 ## Checklist before committing
 
