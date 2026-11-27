@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kover)
+    alias(libs.plugins.sonarqube)
 }
 
 android {
@@ -97,6 +98,7 @@ dependencies {
 kover {
     reports {
         filters {
+            // sonar.coverage.exclusions in the sonar { } block below lists the same files: keep both in step.
             excludes {
                 annotatedBy(
                     "androidx.compose.runtime.Composable",
@@ -123,5 +125,41 @@ kover {
                 minBound(80)
             }
         }
+    }
+}
+
+// SonarQube Cloud analysis, run by the Analysis job of .github/workflows/ci.yml. The reports come
+// from the Unit tests job; the token comes from the job's OIDC exchange, never from this file.
+sonar {
+    properties {
+        property("sonar.organization", "monicahq")
+        property("sonar.projectKey", "monicahq_android")
+        property(
+            "sonar.coverage.jacoco.xmlReportPaths",
+            layout.buildDirectory
+                .file("reports/kover/reportDebug.xml")
+                .get()
+                .asFile.path,
+        )
+        property(
+            "sonar.junit.reportPaths",
+            layout.buildDirectory
+                .dir("test-results/testDebugUnitTest")
+                .get()
+                .asFile.path,
+        )
+        // Mirrors the excludes of the kover { } block above, file by file. A new file that holds
+        // composables is named *Screen.kt or *Sheet.kt, or is added to both lists.
+        property(
+            "sonar.coverage.exclusions",
+            listOf(
+                "**/*Screen.kt",
+                "**/*Sheet.kt",
+                "**/ui/theme/**",
+                "**/MainActivity.kt",
+                "**/MonicaApplication.kt",
+                "**/SignedInApp.kt",
+            ).joinToString(","),
+        )
     }
 }

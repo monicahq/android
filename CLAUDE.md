@@ -36,7 +36,9 @@ Follow the `definition-of-done` skill. In short:
 ./gradlew spotlessApply lintDebug testDebugUnitTest koverVerifyDebug assembleDebug
 ./gradlew connectedDebugAndroidTest   # when UI changed and a device/emulator is available
 ```
-CI (`.github/workflows/ci.yml`) runs all of these plus instrumented tests on an emulator.
+CI (`.github/workflows/ci.yml`) runs all of these plus instrumented tests on an emulator, and a
+SonarQube Cloud analysis (job `Analysis`, settings in the `sonar { }` block of
+`app/build.gradle.kts`) whose failed quality gate blocks the merge.
 
 ## Commits
 NEVER commit or push to `main`: always a dated branch and a pull request (enforced by a GitHub
