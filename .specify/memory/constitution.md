@@ -154,7 +154,10 @@ of their own memories because of how they use their phone.
 - Work happens on branches and lands on `main` only through pull requests. Nothing is ever
   committed or pushed directly to `main`, without exception.
 - CI (`.github/workflows/ci.yml`) MUST be green before merging: Spotless check, Android Lint,
-  unit tests, debug and release builds, and instrumented tests on an emulator.
+  unit tests, debug and release builds, instrumented tests on an emulator, and the SonarQube Cloud
+  analysis (job `Analysis`), which fails when the changed code fails the quality gate. The analysis
+  is skipped for pull requests that cannot sign in to SonarQube Cloud (forks, Dependabot);
+  they stay mergeable and are analysed once on `main`.
 - Coverage gate: Kover (`./gradlew koverVerifyDebug`, run by the CI "Unit tests" job) fails the
   build when non-UI line coverage drops below 80%. Composables, `*Screen.kt` files, previews,
   `MainActivity` and the theme are excluded: the UI tests cover them.
@@ -173,4 +176,4 @@ of their own memories because of how they use their phone.
 - Versioning follows semantic versioning: MAJOR for removing or redefining a principle, MINOR for
   adding a principle or materially expanding guidance, PATCH for wording and clarifications.
 
-**Version**: 1.3.1 | **Ratified**: 2026-11-25 | **Last Amended**: 2026-11-25
+**Version**: 1.4.0 | **Ratified**: 2026-11-25 | **Last Amended**: 2026-11-28

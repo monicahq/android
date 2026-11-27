@@ -59,7 +59,17 @@ jobs:
       - uses: ./.github/actions/setup
 
       - name: Unit tests and coverage gate
-        run: ./gradlew testDebugUnitTest koverVerifyDebug koverHtmlReportDebug
+        run: ./gradlew testDebugUnitTest koverVerifyDebug koverHtmlReportDebug koverXmlReportDebug
+
+      # Only when the tests pass: the Analysis job publishes no coverage for a failing run.
+      - name: Upload analysis inputs
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: analysis-inputs
+          path: |
+            app/build/reports/kover/reportDebug.xml
+            app/build/test-results/testDebugUnitTest/
+          if-no-files-found: error
 
       - name: Upload test report
         if: always()
@@ -160,3 +170,54 @@ jobs:
           name: instrumented-test-report
           path: app/build/reports/androidTests/
           if-no-files-found: ignore
+
+  # SonarQube Cloud analysis. The main ruleset requires this job by its name, "Analysis".
+  analysis:
+    name: Analysis
+    needs: unit-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write # exchanged for a short-lived SonarQube Cloud token, no stored secret
+    env:
+      # Pull requests from forks and from Dependabot get no OIDC token, so they cannot be analysed.
+      # Their steps are skipped, not the job, so the required check still reports and they stay
+      # mergeable. They are analysed once on main.
+      ANALYSE: ${{ github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]') }}
+    steps:
+      # Full history: the service needs it to tell new code from old.
+      - name: Checkout sources
+        if: env.ANALYSE == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - if: env.ANALYSE == 'true'
+        uses: ./.github/actions/setup
+
+      - name: Download analysis inputs
+        if: env.ANALYSE == 'true'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: analysis-inputs
+          path: app/build
+
+      - name: Cache SonarQube packages
+        if: env.ANALYSE == 'true'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: Authenticate to SonarQube Cloud
+        if: env.ANALYSE == 'true'
+        uses: SonarSource/sonarqube-auth-action@b372e2c2930aadfcc4f4399446da1e12772709ad # v1.2
+
+      # The scanner needs compiled classes; the tests already ran in the Unit tests job. On pull
+      # requests it waits for the quality gate and fails with it, which blocks the merge. On main
+      # it does not: main is judged on the project's page, not by a red build.
+      - name: Analyse
+        if: env.ANALYSE == 'true'
+        run: ./gradlew compileDebugUnitTestKotlin sonar ${{ github.event_name == 'pull_request' && '-Dsonar.qualitygate.wait=true' || '' }}
