@@ -7,7 +7,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 
 // Monica's palette mapped onto Material 3 roles, so Material components pick the right colours.
-// No dynamic colour: the design system has no accent colour to take from the wallpaper.
+// No dynamic colour: the app keeps its own palette rather than taking one from the wallpaper.
 private val LightColors =
     lightColorScheme(
         primary = PrimaryLight,

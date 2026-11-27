@@ -102,8 +102,13 @@ fun InstanceSheet(
                     ),
                 keyboardActions = KeyboardActions(onDone = { onSave() }),
                 shape = RoundedCornerShape(6.dp),
-                // The design's hairline border is too faint for a control (3:1 needed).
-                colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant),
+                // The design's hairline border is too faint for a control (3:1 needed). The focused
+                // label is text (4.5:1 needed), which the dark theme's blue primary is not on a card.
+                colors =
+                    OutlinedTextFieldDefaults.colors(
+                        unfocusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        focusedLabelColor = MaterialTheme.colorScheme.onBackground,
+                    ),
                 // Screen readers read this message instead of Material's generic "Invalid input".
                 modifier =
                     Modifier
