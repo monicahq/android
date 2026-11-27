@@ -118,4 +118,30 @@ class AccountViewModelTest {
             assertEquals(SessionState.SignedOut(SignOutReason.LoggedOut), graph.sessionManager.state.value)
             assertFalse(viewModel.uiState.value.confirmSignOut)
         }
+
+    @Test
+    fun `an ended session forgets the open sheet and dialog`() =
+        runTest {
+            val viewModel = viewModel()
+            viewModel.openSheet()
+            viewModel.askSignOut()
+            viewModel.openSheet()
+
+            graph.sessionManager.logOut()
+            withContext(Dispatchers.Default) {
+                withTimeout(5_000) { graph.sessionManager.state.first { it is SessionState.SignedOut } }
+            }
+            graph.signIn(monica)
+
+            val state =
+                withContext(Dispatchers.Default) {
+                    withTimeout(5_000) {
+                        viewModel.uiState.first {
+                            it.name == "Jane Doe" &&
+                                !it.sheetOpen
+                        }
+                    }
+                }
+            assertFalse(state.confirmSignOut)
+        }
 }

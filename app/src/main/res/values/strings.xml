@@ -87,12 +87,12 @@
 
     <string name="colour_blue">Blue</string>
     <string name="colour_green">Green</string>
-    <string name="colour_ochre">Ochre</string>
+    <string name="colour_amber">Amber</string>
     <string name="colour_rust">Rust</string>
     <string name="colour_violet">Violet</string>
     <string name="colour_teal">Teal</string>
-    <string name="colour_rose">Rose</string>
-    <string name="colour_graphite">Graphite</string>
+    <string name="colour_plum">Plum</string>
+    <string name="colour_slate">Slate</string>
     <!-- Read by TalkBack on the "Default" badge of a vault card -->
     <string name="vault_default_description">Default vault</string>
     <!-- Shown as the vault screen's title until the vault is loaded -->

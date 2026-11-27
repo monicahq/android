@@ -212,7 +212,7 @@ fun NewVaultScreen(
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     VaultColour.entries.forEach { colour ->
-                        Swatch(colour, selected = colour == uiState.colour, onClick = { onColourChange(colour) })
+                        Swatch(colour, selected = colour == uiState.colour, enabled = !uiState.saving, onClick = { onColourChange(colour) })
                     }
                 }
             }
@@ -222,10 +222,15 @@ fun NewVaultScreen(
                         Modifier
                             .fillMaxWidth()
                             .heightIn(min = 48.dp)
-                            .toggleable(value = uiState.makeDefault, role = Role.Checkbox, onValueChange = onMakeDefaultChange),
+                            .toggleable(
+                                value = uiState.makeDefault,
+                                enabled = !uiState.saving,
+                                role = Role.Checkbox,
+                                onValueChange = onMakeDefaultChange,
+                            ),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Checkbox(checked = uiState.makeDefault, onCheckedChange = null)
+                    Checkbox(checked = uiState.makeDefault, onCheckedChange = null, enabled = !uiState.saving)
                     Text(
                         text = stringResource(R.string.new_vault_make_default),
                         style = MaterialTheme.typography.bodyLarge,
@@ -280,6 +285,7 @@ fun NewVaultScreen(
 private fun Swatch(
     colour: VaultColour,
     selected: Boolean,
+    enabled: Boolean,
     onClick: () -> Unit,
 ) {
     val colours = colour.colours()
@@ -290,7 +296,7 @@ private fun Swatch(
             Modifier
                 .size(48.dp)
                 .clip(shape)
-                .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
+                .selectable(selected = selected, enabled = enabled, role = Role.RadioButton, onClick = onClick)
                 .semantics { contentDescription = label },
         contentAlignment = Alignment.Center,
     ) {

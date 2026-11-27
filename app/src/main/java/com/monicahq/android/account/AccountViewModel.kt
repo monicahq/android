@@ -35,6 +35,9 @@ private data class AccountLocal(
 /**
  * The signed-in person. Whether the session still holds is found out by the screens' own calls
  * (the vault list's first load): an ended session takes the app back to the welcome screen.
+ *
+ * It lives as long as the activity, across sessions, so it forgets an open sheet or dialog when the
+ * session ends: the next sign-in must not open them by itself.
  */
 class AccountViewModel(
     private val sessionManager: SessionManager,
@@ -45,6 +48,14 @@ class AccountViewModel(
         combine(sessionManager.state, local, ::toUiState)
             // Starts from the session at hand, so the button never shows empty initials.
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), toUiState(sessionManager.state.value, AccountLocal()))
+
+    init {
+        viewModelScope.launch {
+            sessionManager.state.collect { session ->
+                if (session !is SessionState.SignedIn) local.value = AccountLocal()
+            }
+        }
+    }
 
     private fun toUiState(
         session: SessionState,

@@ -83,12 +83,12 @@
 
     <string name="colour_blue">Bleu</string>
     <string name="colour_green">Vert</string>
-    <string name="colour_ochre">Ocre</string>
+    <string name="colour_amber">Ambre</string>
     <string name="colour_rust">Rouille</string>
     <string name="colour_violet">Violet</string>
-    <string name="colour_teal">Bleu canard</string>
-    <string name="colour_rose">Rose</string>
-    <string name="colour_graphite">Graphite</string>
+    <string name="colour_teal">Sarcelle</string>
+    <string name="colour_plum">Prune</string>
+    <string name="colour_slate">Ardoise</string>
     <string name="vault_default_description">Coffre par défaut</string>
     <string name="vault_title">Coffre</string>
     <string name="vault_loading">Chargement du coffre</string>

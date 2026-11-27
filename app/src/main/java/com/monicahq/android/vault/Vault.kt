@@ -18,7 +18,7 @@ data class Vault(
 )
 
 /**
- * The eight colours a vault can have, as the instance stores them (`VaultColourEnum`). They tell
+ * The eight colours a vault can have, as the instance stores and names them (`VaultColourEnum`). They tell
  * vaults apart at a glance and carry no meaning. How each is drawn is in `VaultColours`.
  */
 enum class VaultColour(
@@ -27,17 +27,17 @@ enum class VaultColour(
 ) {
     Blue("#3f5fd0", R.string.colour_blue),
     Green("#4f8a49", R.string.colour_green),
-    Ochre("#9a6a24", R.string.colour_ochre),
+    Amber("#9a6a24", R.string.colour_amber),
     Rust("#9a3f2b", R.string.colour_rust),
     Violet("#6b4fa8", R.string.colour_violet),
     Teal("#2f7f86", R.string.colour_teal),
-    Rose("#a8447a", R.string.colour_rose),
-    Graphite("#4a4a52", R.string.colour_graphite),
+    Plum("#a8447a", R.string.colour_plum),
+    Slate("#4a4a52", R.string.colour_slate),
     ;
 
     companion object {
-        /** A colour this app does not know yet (a newer instance) is drawn in neutral graphite. */
-        fun fromApi(value: String?): VaultColour = entries.firstOrNull { it.apiValue.equals(value, ignoreCase = true) } ?: Graphite
+        /** A colour this app does not know yet (a newer instance) is drawn in neutral slate. */
+        fun fromApi(value: String?): VaultColour = entries.firstOrNull { it.apiValue.equals(value, ignoreCase = true) } ?: Slate
     }
 }
 

@@ -168,7 +168,7 @@ class NewVaultViewModelTest {
 
             viewModel.onNameChange("Famille")
             viewModel.onDescriptionChange("Tous")
-            viewModel.onColourChange(VaultColour.Rose)
+            viewModel.onColourChange(VaultColour.Plum)
 
             val state = viewModel.uiState.value
             assertNull(state.nameError)
@@ -271,5 +271,48 @@ class NewVaultViewModelTest {
             viewModel.leave()
             viewModel.confirmDiscard()
             assertTrue(viewModel.uiState.value.closed)
+        }
+
+    @Test
+    fun `the colour and the default option cannot change while saving`() =
+        runTest {
+            monica.overrides["/api/v1/vaults"] = { FakeMonica.delayed(FakeMonica.json("{}", code = 500), 300) }
+            val viewModel = viewModel(offerDefault = true)
+            viewModel.onNameChange("Family")
+
+            viewModel.create()
+            viewModel.onColourChange(VaultColour.Green)
+            viewModel.onMakeDefaultChange(true)
+
+            assertEquals(VaultColour.Blue, viewModel.uiState.value.colour)
+            assertFalse(viewModel.uiState.value.makeDefault)
+            viewModel.awaitSaved()
+        }
+
+    @Test
+    fun `an emoji at the limit is never cut in half`() =
+        runTest {
+            val viewModel = viewModel()
+
+            viewModel.onNameChange("a".repeat(254) + "😀😀")
+
+            assertEquals("a".repeat(254) + "😀", viewModel.uiState.value.name)
+            assertEquals(
+                255,
+                viewModel.uiState.value.name
+                    .codePointCount(0, viewModel.uiState.value.name.length),
+            )
+        }
+
+    @Test
+    fun `a chosen colour or the default option counts as something typed`() =
+        runTest {
+            val viewModel = viewModel(offerDefault = true)
+            viewModel.onColourChange(VaultColour.Violet)
+            viewModel.leave()
+            assertTrue(viewModel.uiState.value.confirmDiscard)
+
+            assertTrue(NewVaultUiState(makeDefault = true).hasInput)
+            assertFalse(NewVaultUiState().hasInput)
         }
 }

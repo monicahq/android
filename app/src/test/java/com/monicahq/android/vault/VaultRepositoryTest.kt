@@ -120,7 +120,7 @@ class VaultRepositoryTest {
             val vault = (repository.vaults() as ApiResult.Success).value.single()
 
             assertNull(vault.description)
-            assertEquals(VaultColour.Graphite, vault.colour)
+            assertEquals(VaultColour.Slate, vault.colour)
         }
 
     @Test
@@ -153,7 +153,7 @@ class VaultRepositoryTest {
         runTest {
             signedIn()
 
-            val result = repository.create(NewVault(name = "  Family ", description = " Everybody ", colour = VaultColour.Rose))
+            val result = repository.create(NewVault(name = "  Family ", description = " Everybody ", colour = VaultColour.Plum))
 
             assertEquals("Family", (result as ApiResult.Success).value.name)
             val body = lastBody()

@@ -22,24 +22,24 @@ internal val LightVaultColours: Map<VaultColour, VaultColourPair> =
     mapOf(
         VaultColour.Blue to VaultColourPair(Color(0xFF3F5FD0), Color(0xFFE8ECF9)),
         VaultColour.Green to VaultColourPair(Color(0xFF447740), Color(0xFFEAF1E9)),
-        VaultColour.Ochre to VaultColourPair(Color(0xFF8D6122), Color(0xFFF3EDE5)),
+        VaultColour.Amber to VaultColourPair(Color(0xFF8D6122), Color(0xFFF3EDE5)),
         VaultColour.Rust to VaultColourPair(Color(0xFF9A3F2B), Color(0xFFF3E8E6)),
         VaultColour.Violet to VaultColourPair(Color(0xFF6B4FA8), Color(0xFFEDEAF5)),
         VaultColour.Teal to VaultColourPair(Color(0xFF2C747B), Color(0xFFE6F0F0)),
-        VaultColour.Rose to VaultColourPair(Color(0xFFA8447A), Color(0xFFF5E9EF)),
-        VaultColour.Graphite to VaultColourPair(Color(0xFF4A4A52), Color(0xFFE9E9EA)),
+        VaultColour.Plum to VaultColourPair(Color(0xFFA8447A), Color(0xFFF5E9EF)),
+        VaultColour.Slate to VaultColourPair(Color(0xFF4A4A52), Color(0xFFE9E9EA)),
     )
 
 internal val DarkVaultColours: Map<VaultColour, VaultColourPair> =
     mapOf(
         VaultColour.Blue to VaultColourPair(Color(0xFF97A9E6), Color(0xFF333F5B)),
         VaultColour.Green to VaultColourPair(Color(0xFF8EB48B), Color(0xFF314249)),
-        VaultColour.Ochre to VaultColourPair(Color(0xFFC2A67C), Color(0xFF3C3F46)),
+        VaultColour.Amber to VaultColourPair(Color(0xFFC2A67C), Color(0xFF3C3F46)),
         VaultColour.Rust to VaultColourPair(Color(0xFFCC9F95), Color(0xFF3E3D4B)),
         VaultColour.Violet to VaultColourPair(Color(0xFFB2A3D2), Color(0xFF383E57)),
         VaultColour.Teal to VaultColourPair(Color(0xFF82B2B6), Color(0xFF2F4151)),
-        VaultColour.Rose to VaultColourPair(Color(0xFFD09AB7), Color(0xFF3E3C51)),
-        VaultColour.Graphite to VaultColourPair(Color(0xFFAAAAAE), Color(0xFF374050)),
+        VaultColour.Plum to VaultColourPair(Color(0xFFD09AB7), Color(0xFF3E3C51)),
+        VaultColour.Slate to VaultColourPair(Color(0xFFAAAAAE), Color(0xFF374050)),
     )
 
 /**

@@ -192,7 +192,7 @@ class NewVaultScreenTest {
 
         composeRule.onNode(hasText("Nouveau coffre") and SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading)).assertExists()
         composeRule.onNode(hasSetTextAction() and hasText("Nom")).assertExists()
-        composeRule.onNodeWithContentDescription("Bleu canard").assertExists()
+        composeRule.onNodeWithContentDescription("Sarcelle").assertExists()
         composeRule.onNodeWithText("Créer le coffre").performScrollTo().assertIsDisplayed()
     }
 
@@ -222,5 +222,13 @@ class NewVaultScreenTest {
         composeRule.enableAccessibilityChecks()
         setScreen(NewVaultUiState(name = "Family", confirmDiscard = true), darkTheme = true)
         composeRule.onNodeWithText("Discard this vault?").tryPerformAccessibilityChecks()
+    }
+
+    @Test
+    fun colourAndDefaultCannotChangeWhileSaving() {
+        setScreen(NewVaultUiState(name = "Family", offerDefault = true, saving = true))
+
+        composeRule.onNodeWithContentDescription("Green").assertIsNotEnabled()
+        composeRule.onNodeWithText("Make this the default vault").performScrollTo().assertIsNotEnabled()
     }
 }

@@ -198,4 +198,22 @@ class VaultsViewModelTest {
             assertEquals(1, monica.requestsTo("/api/v1/vaults").size)
             assertFalse(viewModel.uiState.value.refreshing)
         }
+
+    @Test
+    fun `the same failure on a second pull is said again`() =
+        runTest {
+            monica.addVaults("Personal")
+            val viewModel = viewModel()
+            viewModel.onShown()
+            viewModel.awaitState { it.content is VaultsContent.Loaded }
+            failNextLoads()
+            viewModel.refresh()
+            viewModel.awaitState { !it.refreshing }
+
+            viewModel.refresh()
+
+            // Cleared at once, so the screen sees a new failure when it comes.
+            assertNull(viewModel.uiState.value.refreshError)
+            assertEquals(AuthError.ServerError, viewModel.awaitState { !it.refreshing }.refreshError)
+        }
 }

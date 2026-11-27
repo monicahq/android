@@ -2,8 +2,10 @@ package com.monicahq.android
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -35,8 +37,9 @@ data class NewVaultDestination(
 )
 
 /**
- * Everything shown while signed in. It is dropped when the session ends, so no screen, back stack
- * or view model of one instance survives a sign-out or an instance switch.
+ * Everything shown while signed in. It is dropped when the session ends: the next sign-in starts
+ * from a new back stack with new screens, and the account's view model forgets its open sheet or
+ * dialog (see [AccountViewModel]).
  */
 @Composable
 fun SignedInApp(
@@ -47,19 +50,22 @@ fun SignedInApp(
     val instanceSheet by instanceSheetViewModel.uiState.collectAsStateWithLifecycle()
     val navController = rememberNavController()
     NavHost(navController = navController, startDestination = VaultsDestination) {
-        composable<VaultsDestination> {
+        composable<VaultsDestination> { entry ->
             VaultsRoute(
                 accountInitials = account.initials,
                 onAccountClick = accountViewModel::openSheet,
-                onVaultClick = { navController.navigate(VaultDestination(it)) },
-                onNewVault = { hasVaults -> navController.navigate(NewVaultDestination(hasVaults)) },
+                onVaultClick = { id -> entry.ifOnTop { navController.navigate(VaultDestination(id)) } },
+                onNewVault = { hasVaults -> entry.ifOnTop { navController.navigate(NewVaultDestination(hasVaults)) } },
             )
         }
         composable<VaultDestination> { entry ->
-            VaultRoute(vaultId = entry.toRoute<VaultDestination>().id, onBack = { navController.popBackStack() })
+            VaultRoute(vaultId = entry.toRoute<VaultDestination>().id, onBack = { entry.ifOnTop { navController.popBackStack() } })
         }
         composable<NewVaultDestination> { entry ->
-            NewVaultRoute(offerDefault = entry.toRoute<NewVaultDestination>().hasVaults, onDone = { navController.popBackStack() })
+            NewVaultRoute(
+                offerDefault = entry.toRoute<NewVaultDestination>().hasVaults,
+                onDone = { entry.ifOnTop { navController.popBackStack() } },
+            )
         }
     }
     if (account.sheetOpen) {
@@ -77,4 +83,12 @@ fun SignedInApp(
         SignOutDialog(onConfirm = accountViewModel::confirmSignOut, onDismiss = accountViewModel::dismissSignOut)
     }
     instanceSheet?.let { InstanceSheetRoute(state = it, viewModel = instanceSheetViewModel) }
+}
+
+/**
+ * Runs [action] only while this screen is the one on top and settled. A second tap while it
+ * animates away would otherwise open a screen twice, or go back twice and leave an empty screen.
+ */
+private fun NavBackStackEntry.ifOnTop(action: () -> Unit) {
+    if (lifecycle.currentState == Lifecycle.State.RESUMED) action()
 }

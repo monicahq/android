@@ -59,7 +59,8 @@ class VaultsViewModel(
     /** The person pulled the list down, or used the "Refresh" action. */
     fun refresh() {
         loading?.cancel()
-        state.update { it.copy(refreshing = true) }
+        // Cleared, so that the same failure again is said again.
+        state.update { it.copy(refreshing = true, refreshError = null) }
         load(pulled = true)
     }
 

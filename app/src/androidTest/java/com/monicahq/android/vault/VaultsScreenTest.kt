@@ -47,7 +47,7 @@ class VaultsScreenTest {
         listOf(
             Vault("v1", "Personal", null, VaultColour.Blue, isDefault = true, contactCount = 25),
             Vault("v2", "Family", null, VaultColour.Green, isDefault = false, contactCount = 1),
-            Vault("v3", "Work", null, VaultColour.Ochre, isDefault = false, contactCount = 0),
+            Vault("v3", "Work", null, VaultColour.Amber, isDefault = false, contactCount = 0),
         )
 
     private val everyColour =

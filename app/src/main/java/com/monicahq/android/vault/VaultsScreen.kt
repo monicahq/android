@@ -231,9 +231,11 @@ private fun AccountButton(
     Box(
         modifier =
             modifier
-                .size(48.dp)
+                // Grows with the initials at the largest font size; the round shape becomes a pill.
+                .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
                 .clip(CircleShape)
                 .clickable(role = Role.Button, onClick = onClick)
+                .padding(6.dp)
                 .semantics { contentDescription = label },
         contentAlignment = Alignment.Center,
     ) {
@@ -453,7 +455,7 @@ private val previewVaults =
     listOf(
         Vault("1", "Personal", null, VaultColour.Blue, isDefault = true, contactCount = 25),
         Vault("2", "Family", null, VaultColour.Green, isDefault = false, contactCount = 12),
-        Vault("3", "Work", null, VaultColour.Ochre, isDefault = false, contactCount = 1),
+        Vault("3", "Work", null, VaultColour.Amber, isDefault = false, contactCount = 1),
     )
 
 @Preview(name = "Light", showSystemUi = true)

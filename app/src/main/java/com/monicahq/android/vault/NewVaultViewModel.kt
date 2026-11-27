@@ -35,7 +35,7 @@ data class NewVaultUiState(
     val closed: Boolean = false,
 ) {
     val canCreate: Boolean get() = name.isNotBlank() && !saving
-    val hasInput: Boolean get() = name.isNotBlank() || description.isNotBlank()
+    val hasInput: Boolean get() = name.isNotBlank() || description.isNotBlank() || colour != VaultColour.Blue || makeDefault
 }
 
 /**
@@ -51,19 +51,21 @@ class NewVaultViewModel(
     val uiState: StateFlow<NewVaultUiState> = state.asStateFlow()
 
     fun onNameChange(name: String) {
-        state.update { it.copy(name = name.take(MAX_NAME_LENGTH), nameError = null) }
+        state.update { it.copy(name = name.takeCharacters(MAX_NAME_LENGTH), nameError = null) }
     }
 
     fun onDescriptionChange(description: String) {
         state.update { it.copy(description = description, descriptionError = null) }
     }
 
+    /** Ignored while saving: what is shown must stay what was sent. */
     fun onColourChange(colour: VaultColour) {
-        state.update { it.copy(colour = colour, generalError = null) }
+        state.update { if (it.saving) it else it.copy(colour = colour, generalError = null) }
     }
 
+    /** Ignored while saving, like the colour. */
     fun onMakeDefaultChange(makeDefault: Boolean) {
-        state.update { it.copy(makeDefault = makeDefault) }
+        state.update { if (it.saving) it else it.copy(makeDefault = makeDefault) }
     }
 
     fun create() {
@@ -137,7 +139,7 @@ class NewVaultViewModel(
     }
 
     companion object {
-        /** The instance's limit for a vault name. */
+        /** The instance's limit for a vault name, in characters (code points, as PHP counts them). */
         const val MAX_NAME_LENGTH = 255
 
         fun factory(offerDefault: Boolean) =
@@ -146,3 +148,7 @@ class NewVaultViewModel(
             }
     }
 }
+
+/** At most [count] characters, counted as code points, so an emoji is never cut in half. */
+internal fun String.takeCharacters(count: Int): String =
+    if (codePointCount(0, length) <= count) this else substring(0, offsetByCodePoints(0, count))

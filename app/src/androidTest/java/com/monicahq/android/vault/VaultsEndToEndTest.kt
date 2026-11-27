@@ -1,5 +1,7 @@
 package com.monicahq.android.vault
 
+import androidx.compose.ui.test.SemanticsNodeInteraction
+import androidx.compose.ui.test.click
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.ComposeTestRule
@@ -9,6 +11,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTouchInput
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.monicahq.android.EndToEnd
@@ -46,6 +49,14 @@ class VaultsEndToEndTest {
         composeRule.waitForText("All your vaults")
     }
 
+    /** Two taps in one gesture, with no wait in between, as a hurried finger does. */
+    private fun SemanticsNodeInteraction.doubleTapQuickly() =
+        performTouchInput {
+            click()
+            advanceEventTime(100)
+            click()
+        }
+
     private fun ComposeTestRule.createVault(name: String) {
         onNode(hasSetTextAction() and hasText("Name")).performTextInput(name)
         onNodeWithContentDescription("Green").performClick()
@@ -61,10 +72,14 @@ class VaultsEndToEndTest {
             composeRule.waitForText("Personal")
             composeRule.onNodeWithText("Default").assertExists()
 
-            composeRule.onNodeWithText("Family").performClick()
+            // Tapped twice: one vault screen opens, not two.
+            composeRule.onNodeWithText("Family").doubleTapQuickly()
             composeRule.waitUntil(EndToEnd.TIMEOUT) { monica.requestsTo("/api/v1/vaults/vault-2").isNotEmpty() }
-            composeRule.onNodeWithContentDescription("Back").performClick()
+            composeRule.waitForIdle()
+            assertEquals(1, monica.requestsTo("/api/v1/vaults/vault-2").size)
 
+            // Back tapped twice: back on the list, not on an empty screen.
+            composeRule.onNodeWithContentDescription("Back").doubleTapQuickly()
             composeRule.waitForText("All your vaults")
             composeRule.onNodeWithText("Work").assertExists()
         }
