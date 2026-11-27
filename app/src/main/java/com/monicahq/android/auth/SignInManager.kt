@@ -138,9 +138,15 @@ class SignInManager(
                 sessionManager.signIn(pending.issuer, pending.tokenEndpoint, pending.revocationEndpoint, pending.clientId, tokens)
         ) {
             is ApiResult.Success -> CompleteResult.SignedIn
+
             is ApiResult.Failed -> CompleteResult.Failed(result.error)
+
             ApiResult.SessionEnded -> CompleteResult.Failed(AuthError.SignInFailed)
+
             ApiResult.Discarded -> CompleteResult.Ignored
+
+            // `/me` neither refuses input nor misses: either is an instance answering oddly.
+            ApiResult.NotFound, is ApiResult.Invalid -> CompleteResult.Failed(AuthError.ServerError)
         }
     }
 

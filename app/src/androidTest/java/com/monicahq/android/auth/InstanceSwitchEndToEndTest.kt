@@ -2,7 +2,7 @@ package com.monicahq.android.auth
 
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
-import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -46,8 +46,9 @@ class InstanceSwitchEndToEndTest {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             composeRule.onNodeWithText("Log in").performScrollTo().performClick()
             e2e.sendCallback(scenario, e2e.authorizationUrl(composeRule))
-            composeRule.waitForText("Hello, Jane Doe")
+            composeRule.waitForText("All your vaults")
 
+            composeRule.onNodeWithContentDescription("Your account").performClick()
             composeRule.onNodeWithText("Instance settings").performClick()
             composeRule.onNode(hasSetTextAction()).performTextReplacement(b.url)
             composeRule.onNodeWithText("Save").performScrollTo().performClick()
@@ -74,12 +75,12 @@ class InstanceSwitchEndToEndTest {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             composeRule.onNodeWithText("Log in").performScrollTo().performClick()
             e2e.sendCallback(scenario, e2e.authorizationUrl(composeRule))
-            composeRule.waitForText("Hello, Jane Doe")
+            composeRule.waitForText("All your vaults")
 
+            composeRule.onNodeWithContentDescription("Your account").performClick()
             composeRule.onNodeWithText("Sign out").performClick()
-            composeRule.onNodeWithText("Sign out?").assertExists()
-            // The dialog's button comes after the home's.
-            composeRule.onAllNodesWithText("Sign out")[1].performClick()
+            composeRule.waitForText("Sign out?")
+            composeRule.onNodeWithText("Sign out").performClick()
 
             composeRule.waitForText("Welcome to Monica")
             composeRule.waitUntil(EndToEnd.TIMEOUT) { a.requestsTo("/oauth/revoke").isNotEmpty() }

@@ -22,10 +22,8 @@
 
     <string name="welcome_connecting">Connexion à %1$s…</string>
 
-    <string name="home_greeting">Bonjour, %1$s</string>
-    <string name="home_connected">Connecté à %1$s</string>
-    <string name="home_title">Accueil</string>
-    <string name="home_sign_out">Se déconnecter</string>
+    <string name="account_connected">Connecté à %1$s</string>
+    <string name="account_sign_out">Se déconnecter</string>
     <string name="sign_out_title">Se déconnecter&#160;?</string>
     <string name="sign_out_message">Vous devrez vous reconnecter pour utiliser Monica sur ce téléphone.</string>
     <string name="sign_out_cancel">Annuler</string>
@@ -49,4 +47,49 @@
     <string name="auth_error_session_revoked">Votre session a été fermée. Reconnectez-vous.</string>
     <string name="auth_error_not_allowed">Vous n\'avez pas le droit de faire cela.</string>
     <string name="auth_error_server">Réponse inattendue de votre instance. Réessayez plus tard.</string>
+
+    <string name="vaults_title">Tous vos coffres</string>
+    <string name="vaults_loading">Chargement de vos coffres</string>
+    <string name="vaults_empty_title">Aucun coffre pour l’instant</string>
+    <string name="vaults_empty_body">Un coffre réunit les personnes dont vous voulez vous souvenir, avec leurs notes, leurs dates et leurs rappels. Commencez par un coffre pour vous&#160;; vous pourrez le partager ou en ajouter d’autres plus tard.</string>
+    <string name="vaults_new">Nouveau coffre</string>
+    <string name="vaults_refresh">Actualiser</string>
+    <string name="vaults_refresh_failed">Vos coffres n’ont pas pu être mis à jour.</string>
+    <string name="vaults_try_again">Réessayer</string>
+    <string name="vault_default">Par défaut</string>
+    <string name="vault_no_contacts">Aucun contact</string>
+    <plurals name="vault_contacts">
+        <item quantity="one">%d contact</item>
+        <item quantity="many">%d contacts</item>
+        <item quantity="other">%d contacts</item>
+    </plurals>
+    <string name="vault_not_found">Ce coffre n’existe plus.</string>
+    <string name="vault_back_to_list">Retour à vos coffres</string>
+    <string name="navigate_back">Retour</string>
+    <string name="account_button">Votre compte</string>
+
+    <string name="new_vault_title">Nouveau coffre</string>
+    <string name="new_vault_name">Nom</string>
+    <string name="new_vault_description">Description (facultatif)</string>
+    <string name="new_vault_colour">Couleur</string>
+    <string name="new_vault_make_default">Faire de ce coffre le coffre par défaut</string>
+    <string name="new_vault_create">Créer le coffre</string>
+    <string name="new_vault_creating">Création…</string>
+    <string name="new_vault_cancel">Annuler</string>
+    <string name="new_vault_discard_title">Abandonner ce coffre&#160;?</string>
+    <string name="new_vault_discard_message">Ce que vous avez saisi sera perdu.</string>
+    <string name="new_vault_discard">Abandonner</string>
+    <string name="new_vault_keep_editing">Continuer</string>
+
+    <string name="colour_blue">Bleu</string>
+    <string name="colour_green">Vert</string>
+    <string name="colour_ochre">Ocre</string>
+    <string name="colour_rust">Rouille</string>
+    <string name="colour_violet">Violet</string>
+    <string name="colour_teal">Bleu canard</string>
+    <string name="colour_rose">Rose</string>
+    <string name="colour_graphite">Graphite</string>
+    <string name="vault_default_description">Coffre par défaut</string>
+    <string name="vault_title">Coffre</string>
+    <string name="vault_loading">Chargement du coffre</string>
 </resources>

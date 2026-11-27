@@ -124,4 +124,88 @@ class ApiClientTest {
 
             assertEquals(ApiResult.Success(SignedInUser("7", "jane@example.com", "jane@example.com")), client.me())
         }
+
+    @Test
+    fun `a 404 is not found and keeps the session`() =
+        runTest {
+            val client = signedInClient()
+
+            assertEquals(ApiResult.NotFound, client.get("/api/v1/vaults/gone") { it })
+            assertTrue(graph.sessionManager.state.value is SessionState.SignedIn)
+        }
+
+    @Test
+    fun `a 422 carries the instance's message and the first message of each field`() =
+        runTest {
+            val client = signedInClient()
+            monica.overrides["/api/v1/vaults"] = {
+                FakeMonica.json(
+                    """{"message":"The name is too long.","errors":{"name":["The name is too long.","Really."],"colour":["Not a colour."]}}""",
+                    code = 422,
+                )
+            }
+
+            assertEquals(
+                ApiResult.Invalid("The name is too long.", mapOf("name" to "The name is too long.", "colour" to "Not a colour.")),
+                client.post("/api/v1/vaults", "{}") { it },
+            )
+        }
+
+    @Test
+    fun `a 422 without fields still carries its message`() =
+        runTest {
+            val client = signedInClient()
+            monica.overrides["/api/v1/vaults"] = { FakeMonica.json("""{"message":"Not now."}""", code = 422) }
+
+            assertEquals(ApiResult.Invalid("Not now."), client.post("/api/v1/vaults", "{}") { it })
+        }
+
+    @Test
+    fun `an unreadable 422 is a server error`() =
+        runTest {
+            val client = signedInClient()
+            monica.overrides["/api/v1/vaults"] = { FakeMonica.json("<html></html>", code = 422) }
+
+            assertEquals(ApiResult.Failed(AuthError.ServerError), client.post("/api/v1/vaults", "{}") { it })
+        }
+
+    @Test
+    fun `a post sends its JSON body with the session's token`() =
+        runTest {
+            val client = signedInClient()
+
+            assertTrue(client.post("/api/v1/vaults", """{"name":"Family"}""") { it } is ApiResult.Success)
+            val request = monica.requestsTo("/api/v1/vaults").single()
+            assertEquals("POST", request.method)
+            assertEquals("""{"name":"Family"}""", request.body?.utf8())
+            assertTrue(request.headers["Content-Type"].orEmpty().startsWith("application/json"))
+            assertEquals("Bearer access-1", request.headers["Authorization"])
+        }
+
+    @Test
+    fun `a post refused with 401 is renewed and sent once more`() =
+        runTest {
+            val client = signedInClient()
+            monica.validAccessToken = "rotated-elsewhere"
+
+            assertTrue(client.post("/api/v1/vaults", """{"name":"Family"}""") { it } is ApiResult.Success)
+            assertEquals(listOf("/api/v1/vaults", "/oauth/token", "/api/v1/vaults"), monica.requests.map { it.url.encodedPath })
+            assertEquals(1, monica.vaults.size)
+        }
+
+    @Test
+    fun `a post redirected elsewhere is not followed, so neither token nor body reaches it`() =
+        runTest {
+            val client = signedInClient()
+            monica.overrides["/api/v1/vaults"] = {
+                MockResponse
+                    .Builder()
+                    .code(307)
+                    .addHeader("Location", "${elsewhere.url}/api/v1/vaults")
+                    .build()
+            }
+
+            assertEquals(ApiResult.Failed(AuthError.Moved), client.post("/api/v1/vaults", """{"name":"Family"}""") { it })
+            assertTrue(elsewhere.requests.isEmpty())
+        }
 }

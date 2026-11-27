@@ -11,8 +11,10 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import okhttp3.Dispatcher
 import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 
 /** The outcome of a request to the instance. */
 sealed interface ApiResult<out T> {
@@ -30,6 +32,18 @@ sealed interface ApiResult<out T> {
 
     /** The person logged out or switched instance while the request was running. */
     data object Discarded : ApiResult<Nothing>
+
+    /** 404: what was asked for does not exist, or no longer does, or belongs to somebody else. */
+    data object NotFound : ApiResult<Nothing>
+
+    /**
+     * 422: the instance refused what was sent. [message] and [fields] (the first message of each
+     * field at fault) are the instance's own words, in the language of the account.
+     */
+    data class Invalid(
+        val message: String,
+        val fields: Map<String, String> = emptyMap(),
+    ) : ApiResult<Nothing>
 }
 
 /**
@@ -57,8 +71,25 @@ class ApiClient internal constructor(
             SignedInUser(id = user.id, name = name.ifEmpty { user.attributes.email }, email = user.attributes.email)
         }
 
-    private suspend fun <T> get(
+    /** `GET` [path] (from `/api/v1`), giving the body of a 2xx answer to [parse]. */
+    internal suspend fun <T> get(
         path: String,
+        parse: (String) -> T,
+    ): ApiResult<T> = request(path, jsonBody = null, parse)
+
+    /**
+     * `POST` [jsonBody] to [path]. Retried once after a renewal like a `GET`: the refused attempt
+     * never reached the instance's logic, so nothing was created twice.
+     */
+    internal suspend fun <T> post(
+        path: String,
+        jsonBody: String,
+        parse: (String) -> T,
+    ): ApiResult<T> = request(path, jsonBody, parse)
+
+    private suspend fun <T> request(
+        path: String,
+        jsonBody: String?,
         parse: (String) -> T,
     ): ApiResult<T> {
         val url = (instanceUrl + path).toHttpUrl()
@@ -69,7 +100,7 @@ class ApiClient internal constructor(
                 Access.Discarded -> return ApiResult.Discarded
                 is Access.Failed -> return ApiResult.Failed(access.error)
             }
-        val first = send(url, token)
+        val first = send(url, token, jsonBody)
         if (first !is Sent.Answer || first.code != 401) return finish(first, parse)
 
         // Only an explicit "not authenticated" from this instance renews access, and only once.
@@ -80,7 +111,7 @@ class ApiClient internal constructor(
                 Access.Discarded -> return ApiResult.Discarded
                 is Access.Failed -> return ApiResult.Failed(access.error)
             }
-        val second = send(url, renewed)
+        val second = send(url, renewed, jsonBody)
         if (second is Sent.Answer && second.code == 401) {
             sessions.rejected(generation)
             return ApiResult.SessionEnded
@@ -102,8 +133,10 @@ class ApiClient internal constructor(
     private suspend fun send(
         url: okhttp3.HttpUrl,
         token: String,
+        jsonBody: String?,
     ): Sent {
         val request = Request.Builder().url(url).header("Accept", "application/json")
+        if (jsonBody != null) request.post(jsonBody.toRequestBody(JSON))
         if (url.sameOrigin(origin)) request.header("Authorization", "Bearer $token")
         return try {
             client.newCall(request.build()).fetch().let { Sent.Answer(it.code, it.body) }
@@ -138,6 +171,14 @@ class ApiClient internal constructor(
                         ApiResult.Failed(AuthError.NotAllowed)
                     }
 
+                    404 -> {
+                        ApiResult.NotFound
+                    }
+
+                    422 -> {
+                        runCatching { invalid(sent.body) }.getOrElse { ApiResult.Failed(AuthError.ServerError) }
+                    }
+
                     else -> {
                         ApiResult.Failed(AuthError.ServerError)
                     }
@@ -146,10 +187,26 @@ class ApiClient internal constructor(
         }
     }
 
+    private fun invalid(body: String): ApiResult.Invalid {
+        val refusal = json.decodeFromString(RefusalDocument.serializer(), body)
+        return ApiResult.Invalid(
+            message = refusal.message,
+            fields = refusal.errors.mapNotNull { (field, messages) -> messages.firstOrNull()?.let { field to it } }.toMap(),
+        )
+    }
+
     private companion object {
         val json = Json { ignoreUnknownKeys = true }
+        val JSON = "application/json".toMediaType()
     }
 }
+
+/** Monica's answer to a refused request: a message, and with 422 the fields at fault. */
+@Serializable
+private data class RefusalDocument(
+    val message: String,
+    val errors: Map<String, List<String>> = emptyMap(),
+)
 
 @Serializable
 private data class MeDocument(

@@ -13,6 +13,7 @@ import com.monicahq.android.instance.FakePreferencesDataStore
 import com.monicahq.android.instance.InstanceChecker
 import com.monicahq.android.instance.InstanceRepository
 import com.monicahq.android.network.HttpClients
+import com.monicahq.android.vault.VaultRepository
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.junit.Assert.assertEquals
 
@@ -29,6 +30,7 @@ class TestGraph {
     val checker = InstanceChecker(http, appVersion = "0.1.0", allowHttp = true)
     val signInManager = SignInManager(store, checker, tokenClient, sessionManager, deviceName = "Test phone", clock = { now })
     val instanceRepository = InstanceRepository(FakePreferencesDataStore())
+    val vaultRepository = VaultRepository(sessionManager)
 
     /** Starts a sign-in on [monica] and returns the authorization address the browser would open. */
     suspend fun startSignIn(

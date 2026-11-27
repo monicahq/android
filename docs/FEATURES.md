@@ -14,3 +14,11 @@ Chronological list of every feature and improvement. Maintained with the `featur
 * Session: The app explains when a session expired or was ended from the web.
 * Sign out: Added signing out, which ends this phone's session on the instance, even when it was offline.
 * Instance sheet: Switching instance while signed in asks first and signs out of the previous instance.
+* Vaults: Signing in or creating an account now lands on the list of all your vaults, in the order arranged on the web.
+* Vaults: Each vault shows its colour, its initial, its name, its number of contacts and whether it is the default vault.
+* Vaults: Added the empty state for an account with no vault, with a button to create the first one.
+* Vaults: The list reloads when pulled down, or from the Refresh action of TalkBack and Switch Access.
+* Vaults: Added creating a vault with a name, a description and a colour, showing the instance's message when it refuses.
+* Vaults: Tapping a vault opens a first vault screen with its name and description.
+* Account: The person's initials open a sheet with the instance settings and signing out, replacing the placeholder home.
+* Vaults: Vault colours stay readable in the dark theme.
