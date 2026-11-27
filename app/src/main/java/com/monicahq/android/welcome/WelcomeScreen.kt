@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -27,6 +28,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,8 +45,11 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -60,20 +65,30 @@ import com.monicahq.android.ui.theme.WordmarkStyle
 
 private const val ILLUSTRATION_ASPECT_RATIO = 880f / 530f
 
-/** Connects [WelcomeScreen] to its [WelcomeViewModel]. Signing up and logging in come later. */
+/**
+ * Connects [WelcomeScreen] to its view models. [openBrowser] opens the instance's sign-in page.
+ */
 @Composable
-fun WelcomeRoute(viewModel: WelcomeViewModel = viewModel(factory = WelcomeViewModel.Factory)) {
+fun WelcomeRoute(
+    viewModel: WelcomeViewModel,
+    openBrowser: (String) -> Unit,
+    sheetViewModel: InstanceSheetViewModel = viewModel(factory = InstanceSheetViewModel.Factory),
+) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val sheet by sheetViewModel.uiState.collectAsStateWithLifecycle()
+    uiState.browserUrl?.let { url ->
+        LaunchedEffect(url) {
+            openBrowser(url)
+            viewModel.onBrowserOpened()
+        }
+    }
     WelcomeScreen(
         uiState = uiState,
-        onSignUp = {},
-        onLogIn = {},
-        onOpenInstanceSheet = viewModel::openInstanceSheet,
-        onDraftChange = viewModel::onDraftChange,
-        onResetDraft = viewModel::resetDraft,
-        onDismissInstanceSheet = viewModel::dismissInstanceSheet,
-        onSaveInstance = viewModel::saveInstance,
+        onSignUp = viewModel::signUp,
+        onLogIn = viewModel::logIn,
+        onOpenInstanceSheet = sheetViewModel::open,
     )
+    sheet?.let { InstanceSheetRoute(state = it, viewModel = sheetViewModel) }
 }
 
 /**
@@ -86,36 +101,25 @@ fun WelcomeScreen(
     onSignUp: () -> Unit,
     onLogIn: () -> Unit,
     onOpenInstanceSheet: () -> Unit,
-    onDraftChange: (String) -> Unit,
-    onResetDraft: () -> Unit,
-    onDismissInstanceSheet: () -> Unit,
-    onSaveInstance: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     // Surface provides the page colour and, as content colour, the ink colour that icons,
     // ripples and focus highlights use.
-    Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+    val title = stringResource(R.string.welcome_title)
+    // Announced when the app comes back to this screen, after signing out for example.
+    Surface(modifier = modifier.fillMaxSize().semantics { paneTitle = title }, color = MaterialTheme.colorScheme.background) {
         WelcomeContent(
-            instanceHost = instanceHost(uiState.instanceUrl),
+            uiState = uiState,
             onSignUp = onSignUp,
             onLogIn = onLogIn,
             onInstanceSettings = onOpenInstanceSheet,
-        )
-    }
-    uiState.sheet?.let {
-        InstanceSheet(
-            state = it,
-            onDraftChange = onDraftChange,
-            onReset = onResetDraft,
-            onDismiss = onDismissInstanceSheet,
-            onSave = onSaveInstance,
         )
     }
 }
 
 @Composable
 private fun WelcomeContent(
-    instanceHost: String,
+    uiState: WelcomeUiState,
     onSignUp: () -> Unit,
     onLogIn: () -> Unit,
     onInstanceSettings: () -> Unit,
@@ -138,13 +142,20 @@ private fun WelcomeContent(
                 Introduction(modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 8.dp))
             }
             Column(modifier = Modifier.padding(top = 24.dp)) {
+                val host = instanceHost(uiState.instanceUrl)
+                SignInStatusLine(
+                    uiState = uiState,
+                    host = host,
+                    modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 16.dp),
+                )
                 Actions(
+                    enabled = uiState.status == SignInStatus.Idle,
                     onSignUp = onSignUp,
                     onLogIn = onLogIn,
                     modifier = Modifier.padding(horizontal = 24.dp),
                 )
                 InstanceLine(
-                    host = instanceHost,
+                    host = host,
                     onClick = onInstanceSettings,
                     modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 20.dp, bottom = 16.dp),
                 )
@@ -254,8 +265,48 @@ private fun Introduction(modifier: Modifier = Modifier) {
     }
 }
 
+/**
+ * What is happening with the sign-in: progress, or what went wrong. One live region, always
+ * composed, whose text changes, so TalkBack announces each change.
+ */
+@Composable
+private fun SignInStatusLine(
+    uiState: WelcomeUiState,
+    host: String,
+    modifier: Modifier = Modifier,
+) {
+    val busy = uiState.status != SignInStatus.Idle
+    val message = uiState.message
+    Row(
+        modifier = modifier.fillMaxWidth().semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite },
+        horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (busy) CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+        when {
+            busy -> {
+                Text(
+                    text = stringResource(R.string.welcome_connecting, host),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+            }
+
+            message != null -> {
+                Text(
+                    text = stringResource(message.message),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error,
+                    textAlign = TextAlign.Center,
+                )
+            }
+        }
+    }
+}
+
 @Composable
 private fun Actions(
+    enabled: Boolean,
     onSignUp: () -> Unit,
     onLogIn: () -> Unit,
     modifier: Modifier = Modifier,
@@ -264,12 +315,14 @@ private fun Actions(
         // heightIn rather than height: with a large font the label wraps instead of being cut.
         Button(
             onClick = onSignUp,
+            enabled = enabled,
             modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
         ) {
             Text(text = stringResource(R.string.welcome_sign_up), textAlign = TextAlign.Center)
         }
         OutlinedButton(
             onClick = onLogIn,
+            enabled = enabled,
             modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
             colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onBackground),
             // The design's "hairline-strong" border (Material's default is outlineVariant).
@@ -326,10 +379,6 @@ private fun WelcomeScreenPreview() {
             onSignUp = {},
             onLogIn = {},
             onOpenInstanceSheet = {},
-            onDraftChange = {},
-            onResetDraft = {},
-            onDismissInstanceSheet = {},
-            onSaveInstance = {},
         )
     }
 }

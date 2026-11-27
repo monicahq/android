@@ -234,8 +234,9 @@ today's code are in [audit.md](audit.md); the extra checks made for this plan ar
   URI, state, verifier, created-at) is stored **encrypted** before the browser opens, so a callback
   received by a recreated process completes normally. Callback parsing returns `Code`,
   `Denied` (`error=access_denied`), `Error`, or `Rejected` (no pending, state mismatch, expired after
-  10 minutes, already used). On `onResume` without a callback while a sign-in is pending, the sign-in
-  is cancelled.
+  1 hour, already used). On `onResume` without a callback, the welcome screen says the sign-in was
+  cancelled (or, after Sign up, how to finish it), but the pending sign-in is kept: the person may
+  have come back to wait for the confirmation email, whose link brings the answer later.
 - **Rationale**: `singleTask` brings the existing activity back and closes the Custom Tab;
   persistence survives process death (FR-006).
 

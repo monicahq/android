@@ -134,8 +134,9 @@ app: the instance line shows the new address.
 - Device is offline: the screen shows exactly the same, since it needs no network.
 - Instance address with a port or a path (`http://192.168.1.10:8080/monica`): accepted as is, and
   the instance line shows `192.168.1.10:8080/monica`.
-- Plain `http://` addresses are accepted: self-hosted instances on a home network often have no
-  certificate.
+- Plain `http://` addresses are refused in release builds, with a message saying the instance needs
+  HTTPS; only debug builds accept them, to reach a Monica on the developer's machine (changed by
+  `specs/002-multi-instance-auth`, FR-031).
 - Rotating the phone while the sheet is open keeps the sheet and what was typed.
 - Tall screens: the buttons and the instance line sit at the bottom of the screen and the space
   between the description and the buttons absorbs the extra height, as in the design.
@@ -172,8 +173,10 @@ app: the instance line shows the new address.
 - **FR-014**: "Save" MUST store the address on the device, close the sheet and update the instance
   line. The stored address MUST survive closing the app. An empty field saves the default address;
   an address without a scheme gets `https://`; a trailing slash is removed.
-- **FR-015**: An address that is not an `http` or `https` address with a host MUST NOT be saved:
-  the field MUST show an error message, announced by screen readers.
+- **FR-015**: An address that is not an `https` address with a host (or an `http` one, in debug
+  builds only) MUST NOT be saved: the field MUST show an error message, announced by screen readers.
+  Since `specs/002-multi-instance-auth`, the address is also checked against the instance before it
+  is saved.
 - **FR-016**: "Cancel", tapping outside, swiping down and back MUST close the sheet without saving.
   "Reset to default" MUST put the default address in the field without saving.
 - **FR-017**: The sheet MUST meet the same accessibility requirements as the screen: its title is a

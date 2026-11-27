@@ -21,7 +21,7 @@ fun apiClient(): ApiClient?                  // null when signed out; bound to o
 ```kotlin
 suspend fun start(intent: LogIn | SignUp): StartResult   // OpenBrowser(uri) | Failed(AuthError)
 suspend fun complete(callback: Uri): CompleteResult       // SignedIn | Failed(AuthError) | Ignored
-fun cancel()                                               // resume without callback
+fun cancel()                                               // instance switch; a resume without callback keeps the attempt
 ```
 
 ## InstanceChecker
@@ -36,7 +36,8 @@ in, after the person confirmed the sign-out warning.
 ## Manifest
 
 - `MainActivity`: `launchMode="singleTask"`, intent filter `VIEW` / `BROWSABLE` / `DEFAULT`,
-  `scheme="com.monicahq.android"`, `path="/oauth/callback"`.
+  `scheme="com.monicahq.android"` (no host, so Android Lint refuses a `path`; the path is checked
+  in code).
 - `android:networkSecurityConfig="@xml/network_security_config"` (cleartext off, system CAs only;
   debug override allows cleartext and user CAs).
 - `data_extraction_rules.xml` and `backup_rules.xml` exclude `datastore/auth.preferences_pb`.

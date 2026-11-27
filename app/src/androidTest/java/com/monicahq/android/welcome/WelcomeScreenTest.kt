@@ -1,20 +1,15 @@
 package com.monicahq.android.welcome
 
-import android.content.res.Configuration
 import androidx.activity.ComponentActivity
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toPixelMap
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertWidthIsAtLeast
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.hasClickAction
@@ -26,13 +21,16 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performScrollTo
-import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.tryPerformAccessibilityChecks
-import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.monicahq.android.WithFontScale
+import com.monicahq.android.WithLocale
+import com.monicahq.android.auth.AuthError
+import com.monicahq.android.instance.DEFAULT_INSTANCE_URL
+import com.monicahq.android.instance.instanceHost
+import com.monicahq.android.isLiveRegion
 import com.monicahq.android.ui.theme.MonicaTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -46,16 +44,10 @@ class WelcomeScreenTest {
     @get:Rule
     val composeRule = createAndroidComposeRule<ComponentActivity>()
 
-    private val host = "app.monicahq.com"
+    private val host = instanceHost(DEFAULT_INSTANCE_URL)
     private var signUpClicks = 0
     private var logInClicks = 0
     private var instanceClicks = 0
-    private val drafts = mutableListOf<String>()
-    private var resetClicks = 0
-    private var dismissals = 0
-    private var saves = 0
-
-    private val openSheet = WelcomeUiState(sheet = InstanceSheetState(draft = "https://monica.example.com"))
 
     private fun setScreen(
         uiState: WelcomeUiState = WelcomeUiState(),
@@ -72,10 +64,6 @@ class WelcomeScreenTest {
                             onSignUp = { signUpClicks++ },
                             onLogIn = { logInClicks++ },
                             onOpenInstanceSheet = { instanceClicks++ },
-                            onDraftChange = { drafts += it },
-                            onResetDraft = { resetClicks++ },
-                            onDismissInstanceSheet = { dismissals++ },
-                            onSaveInstance = { saves++ },
                         )
                     }
                 }
@@ -84,6 +72,129 @@ class WelcomeScreenTest {
     }
 
     private fun instanceLine(prefix: String = "Instance: ") = composeRule.onNode(hasText(prefix + host) and hasClickAction())
+
+    @Test
+    fun startingShowsProgressAndDisablesTheButtons() {
+        setScreen(uiState = WelcomeUiState(status = SignInStatus.Starting))
+
+        composeRule.onNodeWithText("Connecting to $host…").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Sign up").performScrollTo().assertIsNotEnabled()
+        composeRule.onNodeWithText("Log in").performScrollTo().assertIsNotEnabled()
+        composeRule.onNode(hasText("Connecting to $host…") and isLiveRegion()).assertExists()
+    }
+
+    @Test
+    fun completingShowsProgress() {
+        setScreen(uiState = WelcomeUiState(status = SignInStatus.Completing))
+
+        composeRule.onNodeWithText("Connecting to $host…").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun theInstanceLineStaysUsableWhileConnecting() {
+        setScreen(uiState = WelcomeUiState(status = SignInStatus.Starting))
+
+        instanceLine().performScrollTo().performClick()
+
+        assertEquals(1, instanceClicks)
+    }
+
+    @Test
+    fun anErrorIsShownAndAnnouncedAndLogInWorksAgain() {
+        setScreen(uiState = WelcomeUiState(message = AuthError.Denied))
+
+        composeRule
+            .onNode(hasText("You did not allow access. Log in again to allow it.") and isLiveRegion())
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeRule
+            .onNodeWithText("Log in")
+            .performScrollTo()
+            .assertIsEnabled()
+            .performClick()
+        assertEquals(1, logInClicks)
+    }
+
+    @Test
+    fun registrationClosedIsExplained() {
+        setScreen(uiState = WelcomeUiState(message = AuthError.RegistrationClosed))
+
+        composeRule
+            .onNodeWithText(
+                "This instance doesn't accept new accounts. Ask its administrator.",
+            ).performScrollTo()
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun endedSessionsAreExplained() {
+        setScreen(uiState = WelcomeUiState(message = AuthError.SessionRevoked))
+
+        composeRule.onNodeWithText("Your session was ended. Log in again.").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun expiredSessionsAreExplained() {
+        setScreen(uiState = WelcomeUiState(message = AuthError.SessionExpired))
+
+        composeRule.onNodeWithText("Your session expired. Log in again.").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun signInStatesShowInFrench() {
+        setScreen(uiState = WelcomeUiState(status = SignInStatus.Starting), locale = Locale.FRENCH)
+
+        composeRule.onNodeWithText("Connexion à $host…").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun errorsShowInFrench() {
+        setScreen(uiState = WelcomeUiState(message = AuthError.RegistrationClosed), locale = Locale.FRENCH)
+
+        composeRule
+            .onNodeWithText("Cette instance n'accepte pas de nouveaux comptes. Demandez à son administrateur.")
+            .performScrollTo()
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun progressPassesAccessibilityChecksInLightTheme() {
+        composeRule.enableAccessibilityChecks()
+        setScreen(uiState = WelcomeUiState(status = SignInStatus.Starting))
+
+        composeRule.onRoot().tryPerformAccessibilityChecks()
+    }
+
+    @Test
+    fun progressPassesAccessibilityChecksInDarkTheme() {
+        composeRule.enableAccessibilityChecks()
+        setScreen(uiState = WelcomeUiState(status = SignInStatus.Starting), darkTheme = true)
+
+        composeRule.onRoot().tryPerformAccessibilityChecks()
+    }
+
+    @Test
+    fun theScreenHasATitleForScreenReaders() {
+        setScreen()
+
+        composeRule.onNode(SemanticsMatcher.expectValue(SemanticsProperties.PaneTitle, "Welcome to Monica")).assertExists()
+    }
+
+    @Test
+    fun errorPassesAccessibilityChecksInLightTheme() {
+        composeRule.enableAccessibilityChecks()
+        setScreen(uiState = WelcomeUiState(message = AuthError.SessionRevoked))
+
+        composeRule.onRoot().tryPerformAccessibilityChecks()
+    }
+
+    @Test
+    fun errorPassesAccessibilityChecksInDarkTheme() {
+        composeRule.enableAccessibilityChecks()
+        setScreen(uiState = WelcomeUiState(message = AuthError.SessionRevoked), darkTheme = true)
+
+        composeRule.onRoot().tryPerformAccessibilityChecks()
+    }
 
     @Test
     fun showsEveryElementOfTheDesign() {
@@ -140,141 +251,6 @@ class WelcomeScreenTest {
             .onNode(hasText("Instance: 192.168.1.10:8080/monica") and hasClickAction())
             .performScrollTo()
             .assertIsDisplayed()
-    }
-
-    @Test
-    fun sheetShowsEveryElement() {
-        setScreen(uiState = openSheet)
-
-        composeRule.onNodeWithText("Instance URL").assertIsDisplayed()
-        composeRule.onNodeWithText("The address", substring = true).assertIsDisplayed()
-        composeRule.onNodeWithText("Address").assertIsDisplayed()
-        composeRule.onNodeWithText("https://monica.example.com").assertIsDisplayed()
-        composeRule.onNodeWithText("Reset to default").assertIsDisplayed()
-        composeRule.onNodeWithText("Cancel").assertIsDisplayed()
-        composeRule.onNodeWithText("Save").assertIsDisplayed()
-    }
-
-    @Test
-    fun sheetIsClosedByDefault() {
-        setScreen()
-
-        composeRule.onNodeWithText("Instance URL").assertDoesNotExist()
-    }
-
-    @Test
-    fun sheetTitleIsAHeading() {
-        setScreen(uiState = openSheet)
-
-        composeRule
-            .onNode(hasText("Instance URL") and SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading))
-            .assertExists()
-    }
-
-    @Test
-    fun sheetReportsTyping() {
-        setScreen(uiState = openSheet)
-
-        composeRule.onNodeWithText("https://monica.example.com").performTextReplacement("monica.example.org")
-
-        assertEquals(listOf("monica.example.org"), drafts)
-    }
-
-    @Test
-    fun sheetButtonsReportTheirTaps() {
-        setScreen(uiState = openSheet)
-
-        composeRule.onNodeWithText("Reset to default").performClick()
-        composeRule.onNodeWithText("Save").performClick()
-        composeRule.onNodeWithText("Cancel").performClick()
-
-        assertEquals(1, resetClicks)
-        assertEquals(1, saves)
-        assertEquals(1, dismissals)
-    }
-
-    @Test
-    fun keyboardDoneSaves() {
-        setScreen(uiState = openSheet)
-
-        composeRule.onNodeWithText("https://monica.example.com").performImeAction()
-
-        assertEquals(1, saves)
-    }
-
-    @Test
-    fun sheetShowsTheErrorOfAnInvalidAddress() {
-        setScreen(uiState = WelcomeUiState(sheet = InstanceSheetState(draft = "not an address", isError = true)))
-
-        composeRule.onNodeWithText("Enter an address like https://monica.example.com").assertIsDisplayed()
-        composeRule
-            .onNode(
-                hasText("not an address") and
-                    SemanticsMatcher.expectValue(SemanticsProperties.Error, "Enter an address like https://monica.example.com"),
-            ).assertExists()
-    }
-
-    @Test
-    fun sheetButtonsAreAtLeast48dpHigh() {
-        setScreen(uiState = openSheet)
-
-        listOf("Reset to default", "Cancel", "Save").forEach {
-            composeRule.onNodeWithText(it).assertHeightIsAtLeast(48.dp)
-        }
-    }
-
-    @Test
-    fun sheetShowsInFrench() {
-        setScreen(uiState = openSheet, locale = Locale.FRENCH)
-
-        composeRule.onNodeWithText("URL de l'instance").assertIsDisplayed()
-        composeRule.onNodeWithText("Adresse").assertIsDisplayed()
-        composeRule.onNodeWithText("Rétablir par défaut").assertIsDisplayed()
-        composeRule.onNodeWithText("Annuler").assertIsDisplayed()
-        composeRule.onNodeWithText("Sauvegarder").assertIsDisplayed()
-    }
-
-    @Test
-    fun sheetIsReachableWithTheLargestFont() {
-        setScreen(uiState = openSheet, fontScale = 2f)
-
-        composeRule.onNodeWithText("Save").performScrollTo().assertIsDisplayed()
-        composeRule.onNodeWithText("Reset to default").performScrollTo().assertIsDisplayed()
-    }
-
-    @Test
-    fun sheetPassesAccessibilityChecksInLightTheme() {
-        composeRule.enableAccessibilityChecks()
-        setScreen(uiState = openSheet)
-
-        composeRule.onNodeWithText("Instance URL").tryPerformAccessibilityChecks()
-    }
-
-    @Test
-    fun sheetPassesAccessibilityChecksInDarkTheme() {
-        composeRule.enableAccessibilityChecks()
-        setScreen(uiState = openSheet, darkTheme = true)
-
-        composeRule.onNodeWithText("Instance URL").tryPerformAccessibilityChecks()
-    }
-
-    @Test
-    fun sheetErrorPassesAccessibilityChecksInLightTheme() {
-        composeRule.enableAccessibilityChecks()
-        setScreen(uiState = WelcomeUiState(sheet = InstanceSheetState(draft = "not an address", isError = true)))
-
-        composeRule.onNodeWithText("Instance URL").tryPerformAccessibilityChecks()
-    }
-
-    @Test
-    fun sheetErrorPassesAccessibilityChecksInDarkTheme() {
-        composeRule.enableAccessibilityChecks()
-        setScreen(
-            uiState = WelcomeUiState(sheet = InstanceSheetState(draft = "not an address", isError = true)),
-            darkTheme = true,
-        )
-
-        composeRule.onNodeWithText("Instance URL").tryPerformAccessibilityChecks()
     }
 
     @Test
@@ -376,36 +352,4 @@ class WelcomeScreenTest {
 
         composeRule.onRoot().tryPerformAccessibilityChecks()
     }
-}
-
-/** Shows [content] with the resources of [locale], without changing the device's language. */
-@Composable
-private fun WithLocale(
-    locale: Locale?,
-    content: @Composable () -> Unit,
-) {
-    if (locale == null) return content()
-    val context = LocalContext.current
-    val configuration = Configuration(LocalConfiguration.current).apply { setLocale(locale) }
-    // Only the resources change: the real context is kept, since windows such as bottom sheets
-    // need the activity's.
-    CompositionLocalProvider(
-        LocalResources provides context.createConfigurationContext(configuration).resources,
-        LocalConfiguration provides configuration,
-        content = content,
-    )
-}
-
-/** Shows [content] as with the system font size set to [fontScale]. */
-@Composable
-private fun WithFontScale(
-    fontScale: Float?,
-    content: @Composable () -> Unit,
-) {
-    if (fontScale == null) return content()
-    val density = LocalDensity.current
-    CompositionLocalProvider(
-        LocalDensity provides Density(density.density, fontScale),
-        content = content,
-    )
 }

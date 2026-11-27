@@ -34,11 +34,12 @@ sign-in. Cleared on instance change.
 | `issuer`, `clientId`, `redirectUri`, `tokenEndpoint` | copied from the configuration at start; the callback is only exchanged with this `tokenEndpoint` |
 | `state` | 32 random bytes, base64url, `SecureRandom` |
 | `codeVerifier` | 64 random bytes base64url (86 chars, within RFC 7636's 43–128) |
-| `createdAt` | wall clock ms; expires after 10 minutes |
+| `createdAt` | wall clock ms; expires after 1 hour (time to create an account and confirm its email) |
 | `intent` | `LogIn` or `SignUp` (`prompt=create`) |
 
 State transitions: `none → pending` (Log in / Sign up) → `none` on callback accepted, callback
-rejected, cancel (resume without callback), expiry, instance change. At most one.
+rejected, expiry, logout, instance change; replaced by a new Log in / Sign up. Coming back to the app
+without a callback keeps it: the answer can still arrive from the email confirmation link. At most one.
 
 ### Session (encrypted, `auth` DataStore, key `session`, one value)
 

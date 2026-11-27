@@ -20,6 +20,13 @@ any Monica instance through its public API. Written in Kotlin with Jetpack Compo
 ./gradlew spotlessApply              # format Kotlin code (ktlint)
 ```
 
+## Running against a local Monica
+
+Release builds only accept `https://` instances. Debug builds also accept `http://` and
+user-installed certificate authorities, to reach a Monica running on your machine: from the
+emulator, enter `http://10.0.2.2:8000` (your Monica's port) as the instance, and set Monica's
+`APP_URL` to that same address. See [Architecture](docs/architecture.md#https-and-local-development).
+
 ## Principles
 
 The project rules are in the [constitution](.specify/memory/constitution.md). In short: simple code,

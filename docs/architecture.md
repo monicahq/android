@@ -79,6 +79,44 @@ fun ContactsScreen(uiState: ContactsUiState, onContactClick: (Long) -> Unit) { /
 - Keep logic out of `*Screen.kt` and `*Sheet.kt` files: they are UI only and excluded from the
   coverage measure.
 
+## Signing in and the session
+
+Signing in follows OAuth 2.0 for native apps (RFC 8252): the instance's own sign-in page opens in a
+Custom Tab, with PKCE, and the browser comes back to `com.monicahq.android:/oauth/callback`.
+
+```
+instance/   Instance.kt (addresses), InstanceChecker (is it a compatible Monica?), InstanceRepository
+auth/       SignInManager (browser round trip), SessionManager (the session), AuthStore (encrypted),
+            TokenEndpointClient (token, revoke), Pkce, AuthorizationRequest, AuthError
+network/    HttpClients (no redirects, timeouts), ApiClient (authenticated calls to one instance)
+welcome/    WelcomeViewModel (log in, sign up), InstanceSheetViewModel (check, switch)
+home/       HomeViewModel, HomeScreen (signed-in placeholder)
+```
+
+- `SessionManager` is the only owner of tokens: it stores, renews and ends the session, and exposes
+  a `StateFlow<SessionState>` that never holds a token. `MainActivity` shows the welcome screen or
+  the home from it.
+- Every authenticated call goes through the `ApiClient` that `SessionManager.apiClient()` returns.
+  It is bound to one instance and one session *generation*: logging out or switching instance
+  starts a new generation, cancels the old client's calls and discards their results, so nothing
+  about one instance reaches another. Credentials are only added to requests for the session's own
+  origin, and redirects are never followed.
+- Only one renewal reaches the instance at a time (Monica ends a session whose refresh token is
+  presented twice). Network errors never sign the person out; only a refused renewal does.
+- The session, the pending sign-in and a logout the instance has not heard about yet are stored
+  encrypted with an Android Keystore key, in the `auth` DataStore, which backups exclude.
+- Network calls read the whole response on OkHttp's threads (`Call.fetch()`), never on the main
+  thread.
+
+### HTTPS and local development
+
+Release builds only talk to `https://` instances, trusting the system's certificate authorities
+(`res/xml/network_security_config.xml`). Debug builds override it
+(`src/debug/res/xml/network_security_config.xml`) to accept `http://` and user-installed
+certificate authorities, so the app can reach a Monica on the developer's machine: from the
+emulator, the host is `http://10.0.2.2:8000` (or whatever port Monica serves on). Its `APP_URL`
+must be that same address, since Monica builds its OAuth addresses from it.
+
 ## Languages
 
 - English lives in `res/values/strings.xml` (default and fallback), each translation in

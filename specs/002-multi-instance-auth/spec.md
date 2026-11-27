@@ -61,7 +61,8 @@ person's name and stays signed in after being closed and reopened.
 3. **Given** the person is already signed in on Monica in that browser, **When** they tap "Log in",
    **Then** they only confirm that the app may access their account and come back signed in.
 4. **Given** the person closes the browser or presses back without finishing, **When** they return
-   to the app, **Then** the welcome screen says sign-in was cancelled, and "Log in" works again.
+   to the app, **Then** the welcome screen says sign-in was cancelled, and "Log in" works again. The
+   attempt itself is kept until it expires or another one starts, so a late answer still signs in.
 5. **Given** the person is signed in, **When** the app is closed, the phone restarted and the app
    reopened, **Then** they are still signed in without seeing the browser.
 6. **Given** Android stopped the app while the browser was open, **When** Monica sends the person
@@ -182,7 +183,9 @@ registration closed.
 
 1. **Given** registration is open on the instance, **When** the person taps "Sign up", **Then** the
    browser opens the registration page of that instance, and after creating their account (and
-   any email confirmation Monica requires) they come back to the app signed in.
+   any email confirmation Monica requires) they come back to the app signed in, even if they went
+   back to the app while waiting for the email: it then explains that the link in the email brings
+   them back signed in.
 2. **Given** registration is closed on the instance, **When** the person looks at the welcome
    screen, **Then** "Sign up" explains that this instance does not accept new accounts and to ask its
    administrator, instead of opening the browser.
@@ -218,7 +221,7 @@ phone is signed out and the other is not.
   shown as a failed sign-in.
 - A return to the app arrives with no sign-in in progress, for another instance, or after the sign-in
   was cancelled by switching instance: it is ignored, nothing is sent anywhere.
-- The person takes longer than 10 minutes in the browser: the pending sign-in expires and they are
+- The person takes longer than 1 hour in the browser: the pending sign-in expires and they are
   asked to start again.
 - The person denies access on Monica's consent page: the app shows "You did not allow access".
 - The instance answers with an error page, maintenance mode or a non-Monica answer: "Unexpected answer
@@ -270,7 +273,9 @@ phone is signed out and the other is not.
   the same private address is covered by PKCE (FR-002, FR-003) and by the consent page shown at every
   sign-in (FR-018).
 - **FR-006**: The pending sign-in MUST survive Android stopping the app while the browser is open, for
-  up to 10 minutes, and MUST be cleared once used, cancelled, expired or when the instance changes.
+  up to 1 hour (time to create an account and confirm its email), and MUST be cleared once used,
+  expired, replaced by a new attempt, on logout or when the instance changes. Coming back to the app
+  without an answer does not clear it.
 - **FR-007**: After receiving tokens, the app MUST load the signed-in person's profile through the
   existing API and only then show the signed-in app.
 - **FR-008**: The app MUST request only the access it needs to use the Monica API on the person's
@@ -383,7 +388,7 @@ phone is signed out and the other is not.
   isolation) and what discovery said about it (API address, sign-in addresses, client identifier,
   registration open or closed, version compatibility). Exactly one is current at a time.
 - **Pending sign-in**: one sign-in attempt in progress: instance, client identifier, return address,
-  state, verifier, start time. Lives at most 10 minutes; used once.
+  state, verifier, start time. Lives at most 1 hour; used once.
 - **Session**: the signed-in state on one phone: the instance that issued it, access token and its
   expiry, refresh token, the signed-in person's identity. One at most.
 - **Mobile client** (server): the first-party public client that represents the Monica apps on an
