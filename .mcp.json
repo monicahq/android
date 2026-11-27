@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "sonarqube": {
+      "type": "http",
+      "url": "https://api.sonarcloud.io/mcp"
+    }
+  }
+}
