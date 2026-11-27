@@ -32,7 +32,7 @@ class SessionLifecycleEndToEndTest {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             composeRule.onNodeWithText("Log in").performScrollTo().performClick()
             e2e.sendCallback(scenario, e2e.authorizationUrl(composeRule))
-            composeRule.waitForText("Hello, Jane Doe")
+            composeRule.waitForText("All your vaults")
         }
         monica.requests.clear()
     }
@@ -48,8 +48,8 @@ class SessionLifecycleEndToEndTest {
         monica.validAccessToken = "rotated-elsewhere"
 
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-            composeRule.waitUntil(EndToEnd.TIMEOUT) { monica.requestsTo("/api/v1/me").size >= 2 }
-            composeRule.onNodeWithText("Hello, Jane Doe").assertExists()
+            composeRule.waitUntil(EndToEnd.TIMEOUT) { monica.requestsTo("/api/v1/vaults").size >= 2 }
+            composeRule.onNodeWithText("All your vaults").assertExists()
             assertEquals(1, monica.requestsTo("/oauth/token").size)
         }
     }
@@ -70,7 +70,7 @@ class SessionLifecycleEndToEndTest {
 
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             composeRule.waitForText("Can't reach this instance", substring = true)
-            composeRule.onNodeWithText("Hello, Jane Doe").assertExists()
+            composeRule.onNodeWithText("All your vaults").assertExists()
         }
     }
 }

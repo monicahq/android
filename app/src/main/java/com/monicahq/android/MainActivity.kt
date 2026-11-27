@@ -18,7 +18,6 @@ import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.monicahq.android.auth.REDIRECT_URI
 import com.monicahq.android.auth.SessionState
-import com.monicahq.android.home.HomeRoute
 import com.monicahq.android.ui.theme.MonicaTheme
 import com.monicahq.android.welcome.WelcomeRoute
 import com.monicahq.android.welcome.WelcomeViewModel
@@ -95,6 +94,6 @@ private fun MonicaRoot(
     when (session) {
         SessionState.Loading -> Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {}
         is SessionState.SignedOut -> WelcomeRoute(viewModel = welcomeViewModel, openBrowser = openBrowser)
-        is SessionState.SignedIn -> HomeRoute()
+        is SessionState.SignedIn -> SignedInApp()
     }
 }

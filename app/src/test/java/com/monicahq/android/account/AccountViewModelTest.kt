@@ -1,9 +1,8 @@
-package com.monicahq.android.home
+package com.monicahq.android.account
 
 import com.monicahq.android.FakeMonica
 import com.monicahq.android.MainDispatcherRule
 import com.monicahq.android.TestGraph
-import com.monicahq.android.auth.AuthError
 import com.monicahq.android.auth.SessionState
 import com.monicahq.android.auth.SignOutReason
 import kotlinx.coroutines.Dispatchers
@@ -21,7 +20,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
-class HomeViewModelTest {
+class AccountViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
@@ -31,15 +30,12 @@ class HomeViewModelTest {
     @After
     fun tearDown() = monica.close()
 
-    private suspend fun TestScope.viewModel(): HomeViewModel {
+    private suspend fun TestScope.viewModel(): AccountViewModel {
         graph.signIn(monica)
-        return HomeViewModel(graph.sessionManager).also { viewModel ->
+        return AccountViewModel(graph.sessionManager).also { viewModel ->
             backgroundScope.launch(mainDispatcherRule.dispatcher) { viewModel.uiState.collect {} }
         }
     }
-
-    private suspend fun HomeViewModel.awaitState(predicate: (HomeUiState) -> Boolean): HomeUiState =
-        withContext(Dispatchers.Default) { withTimeout(5_000) { uiState.first(predicate) } }
 
     @Test
     fun `shows the person and the instance`() =
@@ -47,6 +43,7 @@ class HomeViewModelTest {
             val viewModel = viewModel()
 
             assertEquals("Jane Doe", viewModel.uiState.value.name)
+            assertEquals("JD", viewModel.uiState.value.initials)
             assertEquals(monica.url, viewModel.uiState.value.instanceUrl)
         }
 
@@ -55,30 +52,41 @@ class HomeViewModelTest {
         runTest {
             graph.signIn(monica)
 
-            val viewModel = HomeViewModel(graph.sessionManager)
+            val viewModel = AccountViewModel(graph.sessionManager)
 
             assertEquals("Jane Doe", viewModel.uiState.value.name)
         }
 
     @Test
-    fun `talks to the instance once when it opens`() =
+    fun `a name without letters has no initials`() =
         runTest {
-            viewModel()
+            monica.overrides["/api/v1/me"] = { FakeMonica.json("""{"data":{"id":"7","attributes":{"first_name":"123","email":"123"}}}""") }
+            val viewModel = viewModel()
 
-            withContext(Dispatchers.Default) { withTimeout(5_000) { while (monica.requestsTo("/api/v1/me").size < 2) Thread.sleep(10) } }
+            assertNull(viewModel.uiState.value.initials)
         }
 
     @Test
-    fun `a problem reaching the instance is shown, then dismissed`() =
+    fun `the sheet opens and closes`() =
         runTest {
             val viewModel = viewModel()
-            monica.overrides["/api/v1/me"] = { FakeMonica.json("{}", code = 500) }
 
-            viewModel.refresh()
-            assertEquals(AuthError.ServerError, viewModel.awaitState { it.error != null }.error)
+            viewModel.openSheet()
+            assertTrue(viewModel.uiState.value.sheetOpen)
 
-            viewModel.dismissError()
-            assertNull(viewModel.uiState.value.error)
+            viewModel.closeSheet()
+            assertFalse(viewModel.uiState.value.sheetOpen)
+        }
+
+    @Test
+    fun `the instance settings take the sheet's place`() =
+        runTest {
+            val viewModel = viewModel()
+            viewModel.openSheet()
+
+            viewModel.openInstanceSettings()
+
+            assertFalse(viewModel.uiState.value.sheetOpen)
         }
 
     @Test
@@ -86,8 +94,10 @@ class HomeViewModelTest {
         runTest {
             val viewModel = viewModel()
 
+            viewModel.openSheet()
             viewModel.askSignOut()
             assertTrue(viewModel.uiState.value.confirmSignOut)
+            assertFalse(viewModel.uiState.value.sheetOpen)
 
             viewModel.dismissSignOut()
             assertFalse(viewModel.uiState.value.confirmSignOut)
@@ -107,5 +117,31 @@ class HomeViewModelTest {
             }
             assertEquals(SessionState.SignedOut(SignOutReason.LoggedOut), graph.sessionManager.state.value)
             assertFalse(viewModel.uiState.value.confirmSignOut)
+        }
+
+    @Test
+    fun `an ended session forgets the open sheet and dialog`() =
+        runTest {
+            val viewModel = viewModel()
+            viewModel.openSheet()
+            viewModel.askSignOut()
+            viewModel.openSheet()
+
+            graph.sessionManager.logOut()
+            withContext(Dispatchers.Default) {
+                withTimeout(5_000) { graph.sessionManager.state.first { it is SessionState.SignedOut } }
+            }
+            graph.signIn(monica)
+
+            val state =
+                withContext(Dispatchers.Default) {
+                    withTimeout(5_000) {
+                        viewModel.uiState.first {
+                            it.name == "Jane Doe" &&
+                                !it.sheetOpen
+                        }
+                    }
+                }
+            assertFalse(state.confirmSignOut)
         }
 }

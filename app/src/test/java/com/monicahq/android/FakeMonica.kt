@@ -1,5 +1,12 @@
 package com.monicahq.android
 
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
 import mockwebserver3.Dispatcher
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
@@ -12,7 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger
 /**
  * A Monica instance on MockWebServer, served under [basePath], answering like the real one:
  * status, OAuth description, token endpoint with rotating refresh tokens, revocation, and
- * `/api/v1/me`, which accepts only the latest access token. Every request is recorded.
+ * `/api/v1/me` and the vault endpoints, which accept only the latest access token. Every request is recorded.
  */
 class FakeMonica(
     private val basePath: String = "",
@@ -56,7 +63,8 @@ class FakeMonica(
                         "/oauth/token" -> token(request)
                         "/oauth/revoke" -> revoke(request)
                         "/api/v1/me" -> me(request)
-                        else -> MockResponse.Builder().code(404).build()
+                        "/api/v1/vaults" -> if (request.method == "POST") createVault(request) else vaults(request)
+                        else -> if (path.startsWith("/api/v1/vaults/")) vault(request, path.substringAfterLast('/')) else notFound()
                     }
                 }
             }
@@ -118,13 +126,92 @@ class FakeMonica(
         return MockResponse.Builder().code(200).build()
     }
 
-    private fun me(request: RecordedRequest): MockResponse {
+    private fun authorized(request: RecordedRequest): Boolean {
         val token = validAccessToken
-        if (token == null || request.headers["Authorization"] != "Bearer $token") {
-            return json("""{"message":"Unauthenticated."}""", code = 401)
-        }
+        return token != null && request.headers["Authorization"] == "Bearer $token"
+    }
+
+    private fun unauthenticated() = json("""{"message":"Unauthenticated."}""", code = 401)
+
+    private fun notFound() = json("""{"message":"Not found."}""", code = 404)
+
+    private fun me(request: RecordedRequest): MockResponse {
+        if (!authorized(request)) return unauthenticated()
         return json("""{"data":{"type":"user","id":"7","attributes":{"first_name":"Jane","last_name":"Doe","email":"jane@example.com"}}}""")
     }
+
+    /** The account's vaults, in their arranged order. Empty, as every account starts. */
+    val vaults = CopyOnWriteArrayList<Vault>()
+
+    data class Vault(
+        val id: String,
+        val name: String,
+        val description: String? = null,
+        val colour: String = "#3f5fd0",
+        val isDefault: Boolean = false,
+        val contactCount: Int = 0,
+    )
+
+    /** Adds vaults named [names], the first one default. */
+    fun addVaults(vararg names: String) {
+        names.forEach { name ->
+            vaults += Vault(id = "vault-${vaults.size + 1}", name = name, isDefault = vaults.isEmpty())
+        }
+    }
+
+    private fun vaults(request: RecordedRequest): MockResponse {
+        if (!authorized(request)) return unauthenticated()
+        val page = request.url.queryParameter("page")?.toIntOrNull() ?: 1
+        val perPage = request.url.queryParameter("per_page")?.toIntOrNull() ?: 25
+        val items = vaults.drop((page - 1) * perPage).take(perPage)
+        return json(
+            """{"data":[${items.joinToString(",") { vaultJson(it) }}],"meta":{"page":$page,"per_page":$perPage,"total":${vaults.size}}}""",
+        )
+    }
+
+    private fun vault(
+        request: RecordedRequest,
+        id: String,
+    ): MockResponse {
+        if (!authorized(request)) return unauthenticated()
+        val vault = vaults.firstOrNull { it.id == id } ?: return notFound()
+        return json("""{"data":${vaultJson(vault)}}""")
+    }
+
+    private fun createVault(request: RecordedRequest): MockResponse {
+        if (!authorized(request)) return unauthenticated()
+        val body = Json.parseToJsonElement(request.body?.utf8().orEmpty()).jsonObject
+        val makeDefault = vaults.isEmpty() || body["is_default"]?.jsonPrimitive?.booleanOrNull == true
+        if (makeDefault) vaults.replaceAll { it.copy(isDefault = false) }
+        val vault =
+            Vault(
+                id = "vault-${vaults.size + 1}",
+                name = body.getValue("name").jsonPrimitive.content,
+                description = body["description"]?.jsonPrimitive?.contentOrNull,
+                colour = body["colour"]?.jsonPrimitive?.content ?: "#3f5fd0",
+                isDefault = makeDefault,
+            )
+        vaults += vault
+        return json("""{"data":${vaultJson(vault)}}""", code = 201)
+    }
+
+    private fun vaultJson(vault: Vault): String =
+        buildJsonObject {
+            put("type", "vault")
+            put("id", vault.id)
+            put(
+                "attributes",
+                buildJsonObject {
+                    put("slug", vault.name.lowercase())
+                    put("name", vault.name)
+                    put("description", vault.description)
+                    put("colour", vault.colour)
+                    put("position", vaults.indexOf(vault) + 1)
+                    put("is_default", vault.isDefault)
+                    put("contact_count", vault.contactCount)
+                },
+            )
+        }.toString()
 
     override fun close() = server.close()
 

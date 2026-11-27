@@ -13,6 +13,7 @@ import com.monicahq.android.auth.TokenEndpointClient
 import com.monicahq.android.instance.InstanceChecker
 import com.monicahq.android.instance.InstanceRepository
 import com.monicahq.android.network.HttpClients
+import com.monicahq.android.vault.VaultRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -43,6 +44,8 @@ class MonicaApplication : Application() {
     }
 
     val sessionManager: SessionManager by lazy { SessionManager(authStore, tokenClient, httpClient) }
+
+    val vaultRepository: VaultRepository by lazy { VaultRepository(sessionManager) }
 
     val signInManager: SignInManager by lazy {
         SignInManager(authStore, instanceChecker, tokenClient, sessionManager, deviceName())

@@ -21,16 +21,16 @@ Organize by feature, not by technical type:
 
 ```
 com.monicahq.android
-├── MainActivity.kt
-├── ui/theme/                 # Material 3 theme
-├── contacts/                 # one package per feature
-│   ├── ContactsScreen.kt     # stateful entry + stateless screen
-│   ├── ContactsViewModel.kt
-│   └── ContactsUiState.kt
-└── data/
-    └── contacts/
-        ├── ContactsRepository.kt
-        └── ...data sources
+├── MainActivity.kt           # welcome screen or SignedInApp, following the session
+├── SignedInApp.kt            # navigation while signed in
+├── ui/theme/                 # Material 3 theme, vault colours
+├── network/                  # ApiClient: the only class that sends requests
+├── vault/                    # one package per feature
+│   ├── Vault.kt              # the feature's types
+│   ├── VaultRepository.kt    # its endpoints and JSON
+│   ├── VaultsViewModel.kt    # one per screen, with its UiState
+│   └── VaultsScreen.kt       # stateful entry + stateless screen
+└── account/
 ```
 
 ## A screen, the reference way
@@ -90,12 +90,14 @@ auth/       SignInManager (browser round trip), SessionManager (the session), Au
             TokenEndpointClient (token, revoke), Pkce, AuthorizationRequest, AuthError
 network/    HttpClients (no redirects, timeouts), ApiClient (authenticated calls to one instance)
 welcome/    WelcomeViewModel (log in, sign up), InstanceSheetViewModel (check, switch)
-home/       HomeViewModel, HomeScreen (signed-in placeholder)
+account/    AccountViewModel, AccountSheet (who is signed in, instance settings, sign out)
 ```
 
 - `SessionManager` is the only owner of tokens: it stores, renews and ends the session, and exposes
   a `StateFlow<SessionState>` that never holds a token. `MainActivity` shows the welcome screen or
   the home from it.
+- `MainActivity` shows `SignedInApp` while signed in: its navigation, view models and back stack
+  are dropped as soon as the session ends.
 - Every authenticated call goes through the `ApiClient` that `SessionManager.apiClient()` returns.
   It is bound to one instance and one session *generation*: logging out or switching instance
   starts a new generation, cancels the old client's calls and discards their results, so nothing
@@ -107,6 +109,37 @@ home/       HomeViewModel, HomeScreen (signed-in placeholder)
   encrypted with an Android Keystore key, in the `auth` DataStore, which backups exclude.
 - Network calls read the whole response on OkHttp's threads (`Call.fetch()`), never on the main
   thread.
+
+## Talking to the API
+
+Three layers, each with one job. For a Laravel developer: `ApiClient` is the HTTP kernel and its
+middleware, a repository holds the Actions of one resource, a ViewModel is the controller, and the
+`UiState` with its stateless screen is the Blade view.
+
+| Layer | Example | Knows | Never knows |
+|---|---|---|---|
+| `network/ApiClient` | `get(path, parse)`, `post(path, json, parse)` | the token, renewal, origins, status codes → `ApiResult` | any endpoint but `/me` |
+| repository, one per resource | `vault/VaultRepository` | the resource's endpoints, its JSON, paging | screens |
+| ViewModel, one per screen | `vault/VaultsViewModel` | the screen's state and events | HTTP, JSON |
+| `UiState` + `*Screen` | `VaultsUiState`, `VaultsScreen` | how it looks | where data comes from |
+
+- A repository takes `SessionManager.apiClient()` at each call and never keeps it, so no call can
+  reach a previous instance.
+- `ApiResult` says how a call ended: `Success`, `Failed(AuthError)` (offline, server error...),
+  `NotFound` (404), `Invalid(message, fields)` (422, the instance's own words for each field),
+  `SessionEnded` (the app goes back to the welcome screen by itself) and `Discarded` (signed out
+  meanwhile). Screens show `Invalid` texts as they are: the instance decides, in the account's
+  language.
+- No use case layer until two ViewModels share the same logic (constitution, principle I).
+- A new resource is a new package (`contacts/`, `reminders/`...) with its repository, its
+  ViewModels and its screens; its endpoints never go in `ApiClient`.
+
+## Navigation
+
+Navigation Compose with type-safe routes, in `SignedInApp.kt`: `VaultsDestination` (start),
+`VaultDestination(id)`, `NewVaultDestination(hasVaults)`. A ViewModel that needs its route's
+arguments gets them through its factory (`VaultViewModel.factory(id)`), so it stays a plain class in
+unit tests.
 
 ### HTTPS and local development
 
@@ -131,5 +164,8 @@ must be that same address, since Monica builds its OAuth addresses from it.
 `ui/theme` maps the Monica design system (shadcn-like greys, no accent colour, system sans) onto
 Material 3 colour and type roles, in light and dark. There is no dynamic colour. Use
 `MaterialTheme.colorScheme` and `MaterialTheme.typography` in screens, never raw colours.
-- Add a Jetpack library (Hilt, Room, Navigation, DataStore, WorkManager) only when a feature needs it,
+The eight vault colours are content, not interface: `VaultColours.kt` holds a measured pair
+(initial, tint) per colour and theme, each at least 4.5:1, and `VaultColour.colours()` picks the
+pair of the theme in use.
+- Add a Jetpack library (Hilt, Room, DataStore, WorkManager) only when a feature needs it,
   and justify it in the feature's `plan.md`.

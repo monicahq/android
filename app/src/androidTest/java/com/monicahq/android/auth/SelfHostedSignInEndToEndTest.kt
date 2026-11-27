@@ -1,6 +1,7 @@
 package com.monicahq.android.auth
 
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -43,8 +44,9 @@ class SelfHostedSignInEndToEndTest {
 
             e2e.sendCallback(scenario, e2e.authorizationUrl(composeRule))
 
-            composeRule.waitForText("Hello, Jane Doe")
-            composeRule.onNodeWithText("Connected to $host").assertExists()
+            composeRule.waitForText("All your vaults")
+            composeRule.onNodeWithContentDescription("Your account").performClick()
+            composeRule.waitForText("Connected to $host")
         }
     }
 }

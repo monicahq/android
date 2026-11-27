@@ -26,12 +26,9 @@
     <!-- %1$s is the address of the Monica instance -->
     <string name="welcome_connecting">Connecting to %1$s…</string>
 
-    <!-- %1$s is the name of the person signed in -->
-    <string name="home_greeting">Hello, %1$s</string>
     <!-- %1$s is the address of the Monica instance -->
-    <string name="home_connected">Connected to %1$s</string>
-    <string name="home_title">Home</string>
-    <string name="home_sign_out">Sign out</string>
+    <string name="account_connected">Connected to %1$s</string>
+    <string name="account_sign_out">Sign out</string>
     <string name="sign_out_title">Sign out?</string>
     <string name="sign_out_message">You will need to log in again to use Monica on this phone.</string>
     <string name="sign_out_cancel">Cancel</string>
@@ -55,4 +52,50 @@
     <string name="auth_error_session_revoked">Your session was ended. Log in again.</string>
     <string name="auth_error_not_allowed">You\'re not allowed to do this.</string>
     <string name="auth_error_server">Unexpected answer from your instance. Try again later.</string>
+
+    <string name="vaults_title">All your vaults</string>
+    <string name="vaults_loading">Loading your vaults</string>
+    <string name="vaults_empty_title">No vault yet</string>
+    <string name="vaults_empty_body">A vault holds the people you want to remember, with their notes, dates and reminders. Start with one for yourself; you can share it or add others later.</string>
+    <string name="vaults_new">New vault</string>
+    <string name="vaults_refresh">Refresh</string>
+    <string name="vaults_refresh_failed">Your vaults could not be updated.</string>
+    <string name="vaults_try_again">Try again</string>
+    <string name="vault_default">Default</string>
+    <string name="vault_no_contacts">No contacts</string>
+    <plurals name="vault_contacts">
+        <item quantity="one">%d contact</item>
+        <item quantity="other">%d contacts</item>
+    </plurals>
+    <string name="vault_not_found">This vault no longer exists.</string>
+    <string name="vault_back_to_list">Back to your vaults</string>
+    <string name="navigate_back">Back</string>
+    <string name="account_button">Your account</string>
+
+    <string name="new_vault_title">New vault</string>
+    <string name="new_vault_name">Name</string>
+    <string name="new_vault_description">Description (optional)</string>
+    <string name="new_vault_colour">Colour</string>
+    <string name="new_vault_make_default">Make this the default vault</string>
+    <string name="new_vault_create">Create vault</string>
+    <string name="new_vault_creating">Creating…</string>
+    <string name="new_vault_cancel">Cancel</string>
+    <string name="new_vault_discard_title">Discard this vault?</string>
+    <string name="new_vault_discard_message">What you typed will be lost.</string>
+    <string name="new_vault_discard">Discard</string>
+    <string name="new_vault_keep_editing">Keep editing</string>
+
+    <string name="colour_blue">Blue</string>
+    <string name="colour_green">Green</string>
+    <string name="colour_amber">Amber</string>
+    <string name="colour_rust">Rust</string>
+    <string name="colour_violet">Violet</string>
+    <string name="colour_teal">Teal</string>
+    <string name="colour_plum">Plum</string>
+    <string name="colour_slate">Slate</string>
+    <!-- Read by TalkBack on the "Default" badge of a vault card -->
+    <string name="vault_default_description">Default vault</string>
+    <!-- Shown as the vault screen's title until the vault is loaded -->
+    <string name="vault_title">Vault</string>
+    <string name="vault_loading">Loading the vault</string>
 </resources>

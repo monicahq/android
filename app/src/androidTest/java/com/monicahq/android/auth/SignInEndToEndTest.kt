@@ -1,6 +1,7 @@
 package com.monicahq.android.auth
 
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -46,8 +47,9 @@ class SignInEndToEndTest {
 
             e2e.sendCallback(scenario, url)
 
-            composeRule.waitForText("Hello, Jane Doe")
-            composeRule.onNodeWithText("Connected to ${monica.url.substringAfter("://")}").assertExists()
+            composeRule.waitForText("All your vaults")
+            composeRule.onNodeWithContentDescription("Your account").performClick()
+            composeRule.waitForText("Connected to ${monica.url.substringAfter("://")}")
         }
     }
 
@@ -60,7 +62,7 @@ class SignInEndToEndTest {
             scenario.recreate()
             e2e.sendCallback(scenario, url)
 
-            composeRule.waitForText("Hello, Jane Doe")
+            composeRule.waitForText("All your vaults")
         }
     }
 
@@ -69,11 +71,11 @@ class SignInEndToEndTest {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             composeRule.onNodeWithText("Log in").performScrollTo().performClick()
             e2e.sendCallback(scenario, e2e.authorizationUrl(composeRule))
-            composeRule.waitForText("Hello, Jane Doe")
+            composeRule.waitForText("All your vaults")
         }
 
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-            composeRule.waitForText("Hello, Jane Doe")
+            composeRule.waitForText("All your vaults")
         }
     }
 
@@ -97,7 +99,7 @@ class SignInEndToEndTest {
 
             e2e.sendCallback(scenario, url)
 
-            composeRule.waitForText("Hello, Jane Doe")
+            composeRule.waitForText("All your vaults")
         }
     }
 
@@ -116,7 +118,7 @@ class SignInEndToEndTest {
 
             e2e.sendCallback(scenario, url)
 
-            composeRule.waitForText("Hello, Jane Doe")
+            composeRule.waitForText("All your vaults")
         }
     }
 
