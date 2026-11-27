@@ -2,83 +2,108 @@ package com.monicahq.android
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextReplacement
+import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.monicahq.android.instance.DEFAULT_INSTANCE_URL
-import kotlinx.coroutines.runBlocking
+import com.monicahq.android.instance.instanceHost
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/** End to end: the app as people open it. */
+/** End to end: the app as people open it, and choosing an instance (User Story 2). */
 @RunWith(AndroidJUnit4::class)
 class MainActivityTest {
     @get:Rule
-    val composeRule = createAndroidComposeRule<MainActivity>()
+    val composeRule = createEmptyComposeRule()
 
-    // The saved address lives on the device: every test starts and ends on the default one.
+    private val monica = TestMonica()
+    private val e2e = EndToEnd()
+    private val host get() = monica.url.substringAfter("://")
+
     @Before
+    fun setUp() = e2e.setUp(DEFAULT_INSTANCE_URL)
+
     @After
-    fun useDefaultInstance() =
-        runBlocking {
-            (composeRule.activity.application as MonicaApplication).instanceRepository.setUrl(DEFAULT_INSTANCE_URL)
-        }
+    fun tearDown() {
+        e2e.tearDown()
+        monica.close()
+    }
+
+    private fun openSheetAndType(address: String) {
+        composeRule.onNodeWithContentDescription("Instance settings").performClick()
+        composeRule.onNode(hasSetTextAction()).performTextReplacement(address)
+    }
 
     @Test
     fun opensOnTheWelcomeScreenWithTheDefaultInstance() {
-        composeRule.onNodeWithText("Welcome to Monica").assertIsDisplayed()
-        composeRule.onNodeWithText("Instance: app.monicahq.com").performScrollTo().assertIsDisplayed()
+        ActivityScenario.launch(MainActivity::class.java).use {
+            composeRule.waitForText("Welcome to Monica")
+            composeRule.onNodeWithText("Instance: ${instanceHost(DEFAULT_INSTANCE_URL)}").performScrollTo().assertIsDisplayed()
+        }
     }
 
     @Test
-    fun tappingLogInDoesNothingYet() {
-        composeRule.onNodeWithText("Log in").performScrollTo().performClick()
+    fun aCompatibleInstanceIsCheckedThenKept() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            openSheetAndType(monica.url)
+            composeRule.onNodeWithText("Save").performScrollTo().performClick()
 
-        composeRule.onNodeWithText("Welcome to Monica").assertIsDisplayed()
+            composeRule.waitForText("Instance: $host")
+            composeRule.onNodeWithText("Instance URL").assertDoesNotExist()
+
+            scenario.recreate()
+            composeRule.onNodeWithText("Instance: $host").performScrollTo().assertIsDisplayed()
+        }
     }
 
     @Test
-    fun choosingAnotherInstanceIsKept() {
-        composeRule.onNodeWithContentDescription("Instance settings").performClick()
-        composeRule.onNodeWithText("https://app.monicahq.com").performTextReplacement("monica.example.com")
-        composeRule.onNodeWithText("Save").performClick()
+    fun somethingThatIsNotMonicaIsRefused() {
+        monica.overrides["/api/v1/status"] = { TestMonica.json("<html></html>") }
+        ActivityScenario.launch(MainActivity::class.java).use {
+            openSheetAndType(monica.url)
+            composeRule.onNodeWithText("Save").performScrollTo().performClick()
 
-        composeRule.onNodeWithText("Instance URL").assertDoesNotExist()
-        composeRule.onNodeWithText("Instance: monica.example.com").performScrollTo().assertIsDisplayed()
-
-        composeRule.activityRule.scenario.recreate()
-
-        composeRule.onNodeWithText("Instance: monica.example.com").performScrollTo().assertIsDisplayed()
+            composeRule.waitForText("This address isn't a Monica instance. Check the address.")
+            composeRule.onNodeWithText("Cancel").performScrollTo().performClick()
+            composeRule.onNodeWithText("Instance: ${instanceHost(DEFAULT_INSTANCE_URL)}").performScrollTo().assertIsDisplayed()
+        }
     }
 
     @Test
     fun cancellingKeepsTheInstance() {
-        composeRule.onNode(hasText("Instance: app.monicahq.com") and hasClickAction()).performScrollTo().performClick()
-        composeRule.onNodeWithText("https://app.monicahq.com").performTextReplacement("monica.example.com")
-        composeRule.onNodeWithText("Cancel").performClick()
+        ActivityScenario.launch(MainActivity::class.java).use {
+            composeRule
+                .onNode(
+                    hasText("Instance: ${instanceHost(DEFAULT_INSTANCE_URL)}") and hasClickAction(),
+                ).performScrollTo()
+                .performClick()
+            composeRule.onNode(hasSetTextAction()).performTextReplacement("monica.example.com")
+            composeRule.onNodeWithText("Cancel").performScrollTo().performClick()
 
-        composeRule.onNodeWithText("Instance URL").assertDoesNotExist()
-        composeRule.onNodeWithText("Instance: app.monicahq.com").performScrollTo().assertIsDisplayed()
+            composeRule.onNodeWithText("Instance URL").assertDoesNotExist()
+            composeRule.onNodeWithText("Instance: ${instanceHost(DEFAULT_INSTANCE_URL)}").performScrollTo().assertIsDisplayed()
+        }
     }
 
     @Test
     fun anInvalidAddressIsNotSaved() {
-        composeRule.onNodeWithContentDescription("Instance settings").performClick()
-        composeRule.onNodeWithText("https://app.monicahq.com").performTextReplacement("not an address")
-        composeRule.onNodeWithText("Save").performClick()
+        ActivityScenario.launch(MainActivity::class.java).use {
+            openSheetAndType("not an address")
+            composeRule.onNodeWithText("Save").performScrollTo().performClick()
 
-        composeRule.onNodeWithText("Enter an address like https://monica.example.com").assertIsDisplayed()
-        composeRule.onNodeWithText("Reset to default").performClick()
-        composeRule.onNodeWithText("Save").performClick()
-
-        composeRule.onNodeWithText("Instance: app.monicahq.com").performScrollTo().assertIsDisplayed()
+            composeRule.waitForText("Enter an address like https://monica.example.com")
+            composeRule.onNodeWithText("Cancel").performScrollTo().performClick()
+            composeRule.onNodeWithText("Instance: ${instanceHost(DEFAULT_INSTANCE_URL)}").performScrollTo().assertIsDisplayed()
+        }
     }
 }

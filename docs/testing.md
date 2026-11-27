@@ -74,6 +74,19 @@ window, which needs the activity's context.
 - `FakePreferencesDataStore` replaces DataStore in memory; repository tests use a real DataStore in
   a `TemporaryFolder`.
 
+## Talking to Monica
+
+- `FakeMonica` (in `src/test`) is a Monica on MockWebServer: status, OAuth description, token
+  endpoint with rotating refresh tokens, revocation and `/api/v1/me`, with per-path overrides and
+  every request recorded. It can be served under a path (`FakeMonica(basePath = "/monica")`).
+  `TestGraph` wires the app's objects as `MonicaApplication` does, with a clock tests move.
+- Isolation tests run two `FakeMonica`s with different token prefixes and check that the second
+  never receives anything from the first.
+- `TestMonica` (in `src/androidTest`) is the same server running on the device. End-to-end tests
+  (`EndToEnd`) launch `MainActivity` against it: Espresso-Intents catches the sign-in page the app
+  asks the browser to open, and the test plays the browser by sending
+  `com.monicahq.android:/oauth/callback?code=…&state=…` back as an intent.
+
 ## Running locally
 
 ```sh

@@ -50,7 +50,7 @@ ruleset and `.claude/hooks/block-push-to-main.sh`). Follow the `commits` skill: 
 - `tests`: how to write unit and UI tests
 - `accessibility`: accessibility rules for every screen; agent `accessibility-reviewer` reviews a change
 - `feature-documentator`: keep `docs/FEATURES.md` up to date after every feature
-- `take-screenshot`: capture the app on an emulator for pull requests
+- `take-screenshot`: capture the app on an emulator when asked (not required for pull requests)
 - Spec Kit extensions: `speckit-bug-*` (bug triage), `speckit-assess-*` (evaluate an idea
   before specifying it), `speckit-archive-run` (archive a merged spec), `speckit-companion-*`
 

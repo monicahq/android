@@ -14,8 +14,45 @@
     <string name="instance_sheet_description">The address of the Monica server the app connects to. Keep the default to use the hosted service, or enter the address of your own instance.</string>
     <string name="instance_sheet_address">Address</string>
     <string name="instance_sheet_placeholder">https://monica.example.com</string>
-    <string name="instance_sheet_invalid">Enter an address like https://monica.example.com</string>
     <string name="instance_sheet_reset">Reset to default</string>
     <string name="instance_sheet_cancel">Cancel</string>
     <string name="instance_sheet_save">Save</string>
+    <string name="instance_sheet_checking">Checking %1$s…</string>
+    <string name="instance_switch_title">Switch instance?</string>
+    <!-- %1$s is the address of the instance the person is signed in to -->
+    <string name="instance_switch_message">Switching instance signs you out of %1$s.</string>
+    <string name="instance_switch_confirm">Switch and sign out</string>
+
+    <!-- %1$s is the address of the Monica instance -->
+    <string name="welcome_connecting">Connecting to %1$s…</string>
+
+    <!-- %1$s is the name of the person signed in -->
+    <string name="home_greeting">Hello, %1$s</string>
+    <!-- %1$s is the address of the Monica instance -->
+    <string name="home_connected">Connected to %1$s</string>
+    <string name="home_title">Home</string>
+    <string name="home_sign_out">Sign out</string>
+    <string name="sign_out_title">Sign out?</string>
+    <string name="sign_out_message">You will need to log in again to use Monica on this phone.</string>
+    <string name="sign_out_cancel">Cancel</string>
+
+    <string name="auth_error_invalid_address">Enter an address like https://monica.example.com</string>
+    <string name="auth_error_https_required">This instance must use HTTPS. Enter an address that starts with https://</string>
+    <string name="auth_error_unreachable">Can\'t reach this instance. Check the address and your connection, then try again.</string>
+    <string name="auth_error_timeout">The instance took too long to answer. Try again in a moment.</string>
+    <string name="auth_error_certificate">This instance\'s security certificate isn\'t valid. Ask its administrator to fix it.</string>
+    <string name="auth_error_moved">This instance has moved. Enter its new address.</string>
+    <string name="auth_error_not_monica">This address isn\'t a Monica instance. Check the address.</string>
+    <string name="auth_error_monica_too_old">This Monica is too old for the app. Ask its administrator to update it.</string>
+    <string name="auth_error_app_too_old">This instance needs a newer version of the app. Update it from your app store.</string>
+    <string name="auth_error_no_app_sign_in">This instance doesn\'t support signing in from the app. Ask its administrator.</string>
+    <string name="auth_error_registration_closed">This instance doesn\'t accept new accounts. Ask its administrator.</string>
+    <string name="auth_error_cancelled">Sign-in was cancelled. Log in again when you\'re ready.</string>
+    <string name="auth_error_sign_up_unfinished">Not finished yet? Open the link in the email Monica sent you to confirm your address: it brings you back here, signed in.</string>
+    <string name="auth_error_denied">You did not allow access. Log in again to allow it.</string>
+    <string name="auth_error_sign_in_failed">Sign-in failed. Try again.</string>
+    <string name="auth_error_session_expired">Your session expired. Log in again.</string>
+    <string name="auth_error_session_revoked">Your session was ended. Log in again.</string>
+    <string name="auth_error_not_allowed">You\'re not allowed to do this.</string>
+    <string name="auth_error_server">Unexpected answer from your instance. Try again later.</string>
 </resources>
