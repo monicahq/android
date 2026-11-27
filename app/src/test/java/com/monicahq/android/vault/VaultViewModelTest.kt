@@ -69,4 +69,44 @@ class VaultViewModelTest {
 
             assertEquals(VaultUiState.Failed(AuthError.ServerError), viewModel("vault-1").awaitState())
         }
+
+    @Test
+    fun `offline, a vault received in the list shows from the copy, marked not up to date`() =
+        runTest {
+            monica.addVaults("Personal", "Family")
+            graph.signIn(monica)
+            graph.now = 1_800_000_000_000L
+            graph.vaultRepository.vaults()
+            monica.overrides["/api/v1/vaults/vault-2"] = { FakeMonica.json("{}", code = 500) }
+
+            val viewModel = VaultViewModel("vault-2", graph.vaultRepository)
+            val state =
+                withContext(Dispatchers.Default) {
+                    withTimeout(5_000) {
+                        viewModel.uiState.first {
+                            (it as? VaultUiState.Loaded)?.staleSince !=
+                                null
+                        }
+                    }
+                }
+
+            state as VaultUiState.Loaded
+            assertEquals("Family", state.vault.name)
+            assertEquals(graph.now, state.staleSince)
+        }
+
+    @Test
+    fun `a vault deleted on the web leaves even when it was shown from the copy`() =
+        runTest {
+            monica.addVaults("Personal")
+            graph.signIn(monica)
+            graph.vaultRepository.vaults()
+            monica.vaults.clear()
+
+            val viewModel = VaultViewModel("vault-1", graph.vaultRepository)
+
+            // The copy may show first; the instance's answer then says the vault is gone.
+            withContext(Dispatchers.Default) { withTimeout(5_000) { viewModel.uiState.first { it == VaultUiState.NotFound } } }
+            assertEquals(null, graph.vaultRepository.cachedVault("vault-1"))
+        }
 }

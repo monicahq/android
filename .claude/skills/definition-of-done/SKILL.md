@@ -1,6 +1,6 @@
 ---
 name: definition-of-done
-description: The checklist a change passes before it is committed or put in a pull request. Formatting, Android Lint, unit tests, UI tests, builds, documentation and the features list. Use before every commit, before every pull request, and when asked whether a change is finished.
+description: The checklist a change passes before it is committed or put in a pull request. Formatting, Android Lint, unit tests, UI tests, builds, offline reading, documentation and the features list. Use before every commit, before every pull request, and when asked whether a change is finished.
 ---
 
 # Definition of done
@@ -79,19 +79,34 @@ run the automated accessibility checks, the `accessibility-reviewer` agent has r
 and its confirmed findings are fixed, and the manual checks of `docs/accessibility.md` are done or
 explicitly reported as not done.
 
-## 8. Documentation
+## 8. Offline reading
+
+For a screen that shows data read from the instance (principle VIII, for features specified after
+`specs/004-offline-reading`):
+
+- Offline, it shows the last copy with the "not up to date" line; with no copy, the connection
+  error.
+- Online, it shows the copy at once, then the instance's answer.
+- Its data goes through the shared offline copy, so it is encrypted, excluded from backups and
+  erased with every session end and after 30 days. No screen keeps its own copy elsewhere.
+- Tests cover the copy shown offline, the "not up to date" state, the update and the erasure.
+
+A screen that falls under an exception (server search, billing, administration, an action that
+writes) has it named in its spec. Writing offline is never part of a change.
+
+## 9. Documentation
 
 - `docs/FEATURES.md` has a line for each feature or improvement a person will notice, following the
   `feature-documentator` skill.
 - `README.md` and `docs/` are updated when the change alters how the app is built, configured or
   used. Public classes and non-obvious functions have KDoc saying *why*.
 
-## 9. Constitution
+## 10. Constitution
 
 The change respects `.specify/memory/constitution.md`: simplest solution, official Android
-architecture, unit and UI tests, native only. A deviation is justified in the feature's `plan.md`.
+architecture, unit and UI tests, native only, multilingual, accessible, readable offline. A deviation is justified in the feature's `plan.md`.
 
-## 10. Commit
+## 11. Commit
 
 Follow the `commits` skill: Conventional Commits with a scope, on a dated branch, and no mention of
 Claude anywhere.

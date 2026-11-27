@@ -132,14 +132,43 @@ that changes a screen MUST state how it was checked with TalkBack. See `docs/acc
 Rationale: Monica holds what people know about the people they love. Nobody should be locked out
 of their own memories because of how they use their phone.
 
+### VIII. Readable Offline
+
+Applies to every feature specified after `specs/004-offline-reading`, which builds the mechanism
+and brings the vault screens in line.
+
+- Every screen that shows data read from the instance MUST stay readable without a connection: it
+  shows the last copy the instance answered and says, in words, that it is not up to date and since
+  when. With no copy yet, it shows the connection error as before.
+- Online, a screen MUST show its copy at once, then replace it with the instance's answer. The
+  server stays the source of truth; the copy only holds what the instance already answered.
+- The copy is read only. Every action that changes data MUST reach the instance first; offline, it
+  keeps what the person typed and says the instance cannot be reached. Writing offline and sending
+  later is out of scope until the constitution says otherwise.
+- The copy MUST be encrypted with a key that cannot leave the phone, isolated per instance and
+  account, excluded from cloud backups and device transfers, and kept out of logs and crash
+  reports.
+- The copy MUST be erased whenever a session ends (sign-out, instance switch, session ended by the
+  instance, renewal refused) before the welcome screen shows, and after 30 days without a successful
+  contact with the instance (or when the phone's clock is earlier than that contact). Erasure is
+  done in one place and covers every kind of data kept: no feature erases its own copy.
+- Exceptions, which a spec MUST name explicitly when it uses them: searches answered by the server,
+  billing, instance administration, and any action that writes.
+- Tests cover, for each such screen, the copy shown offline, the "not up to date" state, the update
+  when the instance answers, and the erasure of its data when the session ends.
+
+Rationale: a phone is often without a network, and Monica is where people look up what they know
+about someone right before they see them. Keeping that data on the phone is acceptable only if it
+never outlives the session that loaded it.
+
 ## Technology Standards
 
 - **Language & build**: Kotlin (built into AGP 9), Gradle Kotlin DSL, JDK 21. All dependency
   versions live in `gradle/libs.versions.toml`; no hard-coded versions in build scripts.
 - **Platform**: minSdk 28, compileSdk/targetSdk follow the latest stable Android release.
 - **Preferred Jetpack libraries** (added only when a feature needs them): Navigation Compose
-  (type-safe routes), Hilt for dependency injection, Room for local storage, DataStore for
-  preferences, WorkManager for background work.
+  (type-safe routes), Hilt for dependency injection, Room for local storage (the offline copy of
+  Principle VIII), DataStore for preferences, WorkManager for background work.
 - **Formatting**: ktlint via Spotless (`./gradlew spotlessApply`). Android Lint MUST pass with
   no errors.
 - **Security**: no secrets, API tokens, or keystores in the repository. User credentials are
@@ -151,6 +180,8 @@ of their own memories because of how they use their phone.
   `/speckit-tasks` → `/speckit-implement`. Specs live in `specs/`.
 - `tasks.md` MUST list unit test and UI test tasks for every user story; a story is not done
   until its tests pass.
+- A screen that shows instance data is not done until it reads offline under Principle VIII, or
+  its spec names the exception it falls under.
 - Work happens on branches and lands on `main` only through pull requests. Nothing is ever
   committed or pushed directly to `main`, without exception.
 - CI (`.github/workflows/ci.yml`) MUST be green before merging: Spotless check, Android Lint,
@@ -173,4 +204,4 @@ of their own memories because of how they use their phone.
 - Versioning follows semantic versioning: MAJOR for removing or redefining a principle, MINOR for
   adding a principle or materially expanding guidance, PATCH for wording and clarifications.
 
-**Version**: 1.3.1 | **Ratified**: 2026-11-25 | **Last Amended**: 2026-11-25
+**Version**: 1.4.0 | **Ratified**: 2026-11-25 | **Last Amended**: 2026-11-27

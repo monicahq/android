@@ -3,6 +3,7 @@ package com.monicahq.android.vault
 import com.monicahq.android.FakeMonica
 import com.monicahq.android.TestGraph
 import com.monicahq.android.network.ApiResult
+import com.monicahq.android.offline.Cached
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.test.runTest
@@ -226,5 +227,102 @@ class VaultRepositoryTest {
             assertEquals(ApiResult.Discarded, request.await())
             assertTrue(other.requests.none { it.headers["Authorization"] == "Bearer access-1" })
             assertTrue(other.requestsTo("/api/v1/vaults").isEmpty())
+        }
+
+    @Test
+    fun `nothing is kept before the first answer`() =
+        runTest {
+            signedIn()
+
+            assertNull(repository.cachedVaults())
+        }
+
+    @Test
+    fun `the list is kept as answered, in order, with when it came`() =
+        runTest {
+            signedIn().addVaults("Personal", "Family", "Work")
+            graph.now = 1_800_000_000_000L
+
+            val answered = (repository.vaults() as ApiResult.Success).value
+
+            assertEquals(Cached(answered, graph.now), repository.cachedVaults())
+        }
+
+    @Test
+    fun `a failed call leaves the copy as it was`() =
+        runTest {
+            signedIn().addVaults("Personal")
+            repository.vaults()
+            val kept = repository.cachedVaults()
+            monica.overrides["/api/v1/vaults"] = { FakeMonica.json("{}", code = 500) }
+
+            repository.vaults()
+
+            assertEquals(kept, repository.cachedVaults())
+        }
+
+    @Test
+    fun `the next answer replaces the copy entirely`() =
+        runTest {
+            signedIn().addVaults("Personal", "Family")
+            repository.vaults()
+            monica.vaults[0] = monica.vaults[0].copy(name = "Me")
+            monica.vaults.removeAt(1)
+            monica.addVaults("Work")
+
+            repository.vaults()
+
+            assertEquals(listOf("Me", "Work"), repository.cachedVaults()?.value?.map { it.name })
+        }
+
+    @Test
+    fun `an answer arriving after signing out is not kept`() =
+        runTest {
+            signedIn().addVaults("Personal")
+            monica.overrides["/api/v1/vaults"] = { FakeMonica.delayed(FakeMonica.json("""{"data":[],"meta":{"total":0}}"""), 400) }
+
+            val request = async(Dispatchers.Default) { repository.vaults() }
+            Thread.sleep(100)
+            graph.sessionManager.logOut()
+            request.await()
+
+            assertFalse(graph.offlineCopy.hasData)
+        }
+
+    @Test
+    fun `a vault received only in the list is kept on its own too`() =
+        runTest {
+            signedIn().addVaults("Personal", "Family")
+            graph.now = 1_800_000_000_000L
+            repository.vaults()
+
+            assertEquals(Cached((repository.vaults() as ApiResult.Success).value[1], graph.now), repository.cachedVault("vault-2"))
+        }
+
+    @Test
+    fun `opening a vault keeps its latest answer`() =
+        runTest {
+            signedIn().addVaults("Personal")
+            repository.vaults()
+            monica.vaults[0] = monica.vaults[0].copy(name = "Me")
+            graph.now += 1_000
+
+            repository.vault("vault-1")
+
+            assertEquals("Me", repository.cachedVault("vault-1")?.value?.name)
+            assertEquals(graph.now, repository.cachedVault("vault-1")?.syncedAt)
+        }
+
+    @Test
+    fun `a vault the instance no longer has leaves the copy`() =
+        runTest {
+            signedIn().addVaults("Personal", "Family")
+            repository.vaults()
+            monica.vaults.removeAt(1)
+
+            assertEquals(ApiResult.NotFound, repository.vault("vault-2"))
+
+            assertNull(repository.cachedVault("vault-2"))
+            assertEquals(listOf("Personal"), repository.cachedVaults()?.value?.map { it.name })
         }
 }

@@ -29,4 +29,24 @@ class KeystoreTokenCipherTest {
 
         assertTrue(runCatching { cipher.decrypt(encrypted) }.isFailure)
     }
+
+    @Test
+    fun twoAliasesNeverDecryptEachOther() {
+        val offline = KeystoreTokenCipher(KeystoreTokenCipher.OFFLINE_ALIAS)
+
+        assertTrue(runCatching { offline.decrypt(cipher.encrypt(secret)) }.isFailure)
+        assertTrue(runCatching { cipher.decrypt(offline.encrypt(secret)) }.isFailure)
+    }
+
+    @Test
+    fun aDestroyedKeyMakesEarlierValuesUnreadable() {
+        val offline = KeystoreTokenCipher("monica_test_destroy")
+        val before = offline.encrypt(secret)
+
+        offline.destroyKey()
+
+        assertTrue(runCatching { offline.decrypt(before) }.isFailure)
+        assertArrayEquals(secret, offline.decrypt(offline.encrypt(secret)))
+        offline.destroyKey()
+    }
 }

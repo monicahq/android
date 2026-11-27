@@ -24,6 +24,11 @@ Summary of what it demands:
 6. **Multilingual**: every text in string resources; English default and fallback, French too.
 7. **Accessible (mandatory)**: WCAG 2.2 AA on mobile, automated checks in UI tests, TalkBack
    checked. See `docs/accessibility.md` and the `accessibility` skill.
+8. **Readable offline**: every screen showing instance data shows its last copy offline, says it
+   is not up to date, and its copy is encrypted, per instance and account, never backed up, erased
+   at every session end and after 30 days without contact. Writes stay online. Applies to features
+   specified after `specs/004-offline-reading`; exceptions (server search, billing, admin) are named
+   in the spec.
 
 ## Stack
 - AGP 9 with built-in Kotlin (do not add `org.jetbrains.kotlin.android`), Compose compiler plugin

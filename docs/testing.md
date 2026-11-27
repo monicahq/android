@@ -87,6 +87,17 @@ window, which needs the activity's context.
   asks the browser to open, and the test plays the browser by sending
   `com.monicahq.android:/oauth/callback?code=…&state=…` back as an intent.
 
+## The offline copy
+
+- On the JVM, `FakeOfflineCopy` (in `src/test`) replaces the encrypted database with the same rules:
+  owner check on writes, the 30-day and clock checks on opening, `SyncRule` for updates. `TestGraph`
+  wires it; `leaveOnDisk(...)` pretends an earlier run left a copy, and `onErase` lets a test check
+  the app's state at the moment of the erasure (never already signed out).
+- The real database (SQLCipher, the Keystore, the files) is tested on a device in
+  `androidTest/offline/OfflineDatabaseTest`: order, owner check, encryption at rest, the
+  `noBackupFilesDir` location, erasure, a lost key, a restart.
+- A later schema version comes with a `MigrationTestHelper` test against the JSON in `app/schemas/`.
+
 ## Running locally
 
 ```sh

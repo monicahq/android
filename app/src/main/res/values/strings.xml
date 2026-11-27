@@ -98,4 +98,7 @@
     <!-- Shown as the vault screen's title until the vault is loaded -->
     <string name="vault_title">Vault</string>
     <string name="vault_loading">Loading the vault</string>
+    <!-- Shown when a screen shows the copy kept on the phone because the instance cannot be reached.
+         %1$s is a relative time, already in the person's language: "3 hours ago" -->
+    <string name="stale_notice">Not up to date. Last updated %1$s.</string>
 </resources>

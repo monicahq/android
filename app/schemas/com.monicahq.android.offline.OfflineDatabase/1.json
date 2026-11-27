@@ -1,0 +1,166 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "4c364824f5ea93c58637b27602648a46",
+    "entities": [
+      {
+        "tableName": "vaults",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`local_id` TEXT NOT NULL, `server_id` TEXT, `sync_state` TEXT NOT NULL DEFAULT 'synced', `server_updated_at` INTEGER, `synced_at` INTEGER NOT NULL, `name` TEXT NOT NULL, `description` TEXT, `colour` TEXT NOT NULL, `is_default` INTEGER NOT NULL, `contact_count` INTEGER NOT NULL, `position` INTEGER NOT NULL, PRIMARY KEY(`local_id`))",
+        "fields": [
+          {
+            "fieldPath": "localId",
+            "columnName": "local_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "serverId",
+            "columnName": "server_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "syncState",
+            "columnName": "sync_state",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'synced'"
+          },
+          {
+            "fieldPath": "serverUpdatedAt",
+            "columnName": "server_updated_at",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "syncedAt",
+            "columnName": "synced_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "colour",
+            "columnName": "colour",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isDefault",
+            "columnName": "is_default",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "contactCount",
+            "columnName": "contact_count",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "position",
+            "columnName": "position",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "local_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_vaults_server_id",
+            "unique": true,
+            "columnNames": [
+              "server_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_vaults_server_id` ON `${TABLE_NAME}` (`server_id`)"
+          }
+        ]
+      },
+      {
+        "tableName": "sync_meta",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`resource` TEXT NOT NULL, `synced_at` INTEGER NOT NULL, PRIMARY KEY(`resource`))",
+        "fields": [
+          {
+            "fieldPath": "resource",
+            "columnName": "resource",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "syncedAt",
+            "columnName": "synced_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "resource"
+          ]
+        }
+      },
+      {
+        "tableName": "session_meta",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `instance_url` TEXT NOT NULL, `user_id` TEXT NOT NULL, `last_contact_at` INTEGER NOT NULL, `last_seen_at` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "instanceUrl",
+            "columnName": "instance_url",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "user_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastContactAt",
+            "columnName": "last_contact_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastSeenAt",
+            "columnName": "last_seen_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '4c364824f5ea93c58637b27602648a46')"
+    ]
+  }
+}

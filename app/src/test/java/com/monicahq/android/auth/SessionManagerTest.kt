@@ -40,7 +40,7 @@ class SessionManagerTest {
     fun `a stored session is restored at start without its tokens`() =
         runTest {
             graph.signIn(monica)
-            val restarted = SessionManager(graph.store, graph.tokenClient, graph.http, clock = { graph.now })
+            val restarted = SessionManager(graph.store, graph.tokenClient, graph.http, graph.offlineCopy, clock = { graph.now })
 
             restarted.load()
 
@@ -183,7 +183,7 @@ class SessionManagerTest {
 
             assertEquals("refresh-1", graph.store.pendingRevocation()?.refreshToken)
             monica.overrides.remove("/oauth/revoke")
-            SessionManager(graph.store, graph.tokenClient, graph.http, clock = { graph.now }).load()
+            SessionManager(graph.store, graph.tokenClient, graph.http, graph.offlineCopy, clock = { graph.now }).load()
             assertNull(graph.store.pendingRevocation())
             assertEquals(2, monica.requestsTo("/oauth/revoke").size)
         }

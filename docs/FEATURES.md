@@ -22,3 +22,7 @@ Chronological list of every feature and improvement. Maintained with the `featur
 * Vaults: Tapping a vault opens a first vault screen with its name and description.
 * Account: The person's initials open a sheet with the instance settings and signing out, replacing the placeholder home.
 * Vaults: Vault colours stay readable in the dark theme.
+* Vaults: The list of vaults and each vault stay readable without a connection, from a copy kept on the phone.
+* Vaults: The list appears at once when the app opens, then updates from the instance.
+* Vaults: A line says when what is shown is not up to date, and since when.
+* Privacy: The copy kept on the phone is encrypted, never backed up, and erased at sign-out, instance switch, session end, or after 30 days without reaching the instance.
