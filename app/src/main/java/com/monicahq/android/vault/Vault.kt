@@ -15,6 +15,8 @@ data class Vault(
     val isDefault: Boolean,
     /** Archived and partial contacts included, as the instance counts them. */
     val contactCount: Int,
+    /** When the instance last changed it (seconds since 1970), kept by the offline copy. */
+    val serverUpdatedAt: Long? = null,
 )
 
 /**

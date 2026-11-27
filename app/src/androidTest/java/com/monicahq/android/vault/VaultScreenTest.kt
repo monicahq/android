@@ -133,4 +133,25 @@ class VaultScreenTest {
         setScreen(VaultUiState.NotFound, darkTheme = true)
         composeRule.onRoot().tryPerformAccessibilityChecks()
     }
+
+    @Test
+    fun aVaultFromTheCopySaysItIsNotUpToDate() {
+        setScreen(VaultUiState.Loaded(family, staleSince = System.currentTimeMillis() - 3 * 3_600_000L))
+
+        composeRule.onNodeWithText("Not up to date", substring = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun aVaultFromTheCopyPassesAccessibilityChecksInLightTheme() {
+        composeRule.enableAccessibilityChecks()
+        setScreen(VaultUiState.Loaded(family, staleSince = System.currentTimeMillis() - 60_000L))
+        composeRule.onRoot().tryPerformAccessibilityChecks()
+    }
+
+    @Test
+    fun aVaultFromTheCopyPassesAccessibilityChecksInDarkTheme() {
+        composeRule.enableAccessibilityChecks()
+        setScreen(VaultUiState.Loaded(family, staleSince = System.currentTimeMillis() - 60_000L), darkTheme = true)
+        composeRule.onRoot().tryPerformAccessibilityChecks()
+    }
 }

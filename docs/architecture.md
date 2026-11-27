@@ -25,6 +25,7 @@ com.monicahq.android
 ├── SignedInApp.kt            # navigation while signed in
 ├── ui/theme/                 # Material 3 theme, vault colours
 ├── network/                  # ApiClient: the only class that sends requests
+├── offline/                  # the encrypted offline copy, erased with the session
 ├── vault/                    # one package per feature
 │   ├── Vault.kt              # the feature's types
 │   ├── VaultRepository.kt    # its endpoints and JSON
@@ -133,6 +134,35 @@ middleware, a repository holds the Actions of one resource, a ViewModel is the c
 - No use case layer until two ViewModels share the same logic (constitution, principle I).
 - A new resource is a new package (`contacts/`, `reminders/`...) with its repository, its
   ViewModels and its screens; its endpoints never go in `ApiClient`.
+
+## Offline copy
+
+Every screen showing instance data stays readable offline (constitution, principle VIII). The full
+contract is `specs/004-offline-reading/contracts/offline-copy.md`; in short:
+
+```
+offline/   OfflineCopy (interface), RoomOfflineCopy (Room + SQLCipher), OfflineDatabase (tables, DAOs),
+           SyncRule (the update rule), Passphrase (wrapped by the Keystore key `monica_offline`)
+```
+
+- The copy is a Room database encrypted by SQLCipher in `noBackupFilesDir/offline/`, which Android
+  never backs up or transfers. Its passphrase is stored encrypted under a Keystore key of its own.
+- `SessionManager` opens it when a session starts or is restored, and erases it in `endLocked()`,
+  which every session end goes through, before `SignedOut` is published. At start it erases a copy
+  that belongs to someone else, cannot be read, or has had no answer from the instance for 30 days.
+  Erasure destroys the key first, then deletes the folder: it covers every table, so no feature
+  erases its own data.
+- A repository reads the copy (`cachedVaults()`) and, after each successful answer, writes it with
+  the owner it captured before the call; a write for an owner that is no longer current is dropped.
+- A ViewModel shows the copy at once, then the answer; when the answer fails it keeps the copy and
+  sets `staleSince`, which the screen shows with `ui/StaleNotice`.
+- Every table has the synchronisation columns (`local_id`, `server_id`, `sync_state`,
+  `server_updated_at`, `synced_at`), and an answer never replaces nor deletes a row whose
+  `sync_state` is not `synced`: offline writing can come later without changing any record's id.
+  Writing offline is not allowed yet.
+- Adding a resource: its table with the five columns, a migration tested against `app/schemas/`, a
+  `cachedX()` read and a write after success in its repository, `staleSince` in its ViewModel,
+  `StaleNotice` on its screen.
 
 ## Navigation
 

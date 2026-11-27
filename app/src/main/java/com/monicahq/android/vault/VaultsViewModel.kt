@@ -22,6 +22,12 @@ data class VaultsUiState(
     val refreshing: Boolean = false,
     /** A pull to refresh failed while a list was shown: said once, then cleared. */
     val refreshError: AuthError? = null,
+    /**
+     * The list shown is the copy kept on the phone and the instance could not be reached: when
+     * that copy was last received (milliseconds). Null when the list is the latest answer, or the
+     * first answer is still awaited.
+     */
+    val staleSince: Long? = null,
 )
 
 sealed interface VaultsContent {
@@ -38,9 +44,10 @@ sealed interface VaultsContent {
 }
 
 /**
- * The vault list. It is loaded each time the screen is shown again (after creating a vault, coming
- * back from one, or returning to the app), quietly: the list stays while it reloads, and a quiet
- * reload that fails changes nothing. Only a pull to refresh reports its failure.
+ * The vault list. It shows the copy kept on the phone at once, then the instance's answer. It is
+ * loaded each time the screen is shown again (after creating a vault, coming back from one, or
+ * returning to the app), quietly: the list stays while it reloads, and a reload that fails marks
+ * it as not up to date. A pull to refresh also says that it failed.
  */
 class VaultsViewModel(
     private val repository: VaultRepository,
@@ -77,18 +84,34 @@ class VaultsViewModel(
     private fun load(pulled: Boolean) {
         loading =
             viewModelScope.launch {
+                // The copy kept on the phone shows at once; the instance's answer replaces it.
+                if (state.value.content == VaultsContent.Loading) {
+                    repository.cachedVaults()?.let { cached ->
+                        state.update {
+                            if (it.content ==
+                                VaultsContent.Loading
+                            ) {
+                                it.copy(content = VaultsContent.Loaded(cached.value))
+                            } else {
+                                it
+                            }
+                        }
+                    }
+                }
                 val result = repository.vaults()
-                state.update { current -> current.after(result, pulled) }
+                val staleSince = if (result is ApiResult.Success) null else repository.cachedVaults()?.syncedAt
+                state.update { current -> current.after(result, pulled, staleSince) }
             }
     }
 
     private fun VaultsUiState.after(
         result: ApiResult<List<Vault>>,
         pulled: Boolean,
+        staleSince: Long?,
     ): VaultsUiState {
         val error =
             when (result) {
-                is ApiResult.Success -> return copy(content = VaultsContent.Loaded(result.value), refreshing = false)
+                is ApiResult.Success -> return copy(content = VaultsContent.Loaded(result.value), refreshing = false, staleSince = null)
 
                 // The app is leaving the signed-in screens: nothing to show.
                 ApiResult.SessionEnded, ApiResult.Discarded -> return copy(refreshing = false)
@@ -97,10 +120,11 @@ class VaultsViewModel(
 
                 ApiResult.NotFound, is ApiResult.Invalid -> AuthError.ServerError
             }
+        // A list on screen stays, marked as not up to date; without one, the error shows.
         return when {
             content !is VaultsContent.Loaded -> copy(content = VaultsContent.Failed(error), refreshing = false)
-            pulled -> copy(refreshing = false, refreshError = error)
-            else -> this
+            pulled -> copy(refreshing = false, refreshError = error, staleSince = staleSince ?: this.staleSince)
+            else -> copy(staleSince = staleSince ?: this.staleSince)
         }
     }
 

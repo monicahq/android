@@ -208,4 +208,39 @@ class ApiClientTest {
             assertEquals(ApiResult.Failed(AuthError.Moved), client.post("/api/v1/vaults", """{"name":"Family"}""") { it })
             assertTrue(elsewhere.requests.isEmpty())
         }
+
+    @Test
+    fun `answers given only to an accepted token confirm the offline copy`() =
+        runTest {
+            val client = signedInClient()
+            for (code in listOf(200, 404, 422)) {
+                graph.now += 1
+                monica.overrides["/api/v1/me"] = { FakeMonica.json("""{"message":"x"}""", code = code) }
+
+                client.me()
+
+                assertEquals("after $code", graph.now, graph.offlineCopy.lastContactAt)
+            }
+        }
+
+    @Test
+    fun `a server error or a redirect never confirms the offline copy`() =
+        runTest {
+            val client = signedInClient()
+            val before = graph.offlineCopy.lastContactAt
+            graph.now += 1
+            for (code in listOf(500, 302)) {
+                monica.overrides["/api/v1/me"] = {
+                    MockResponse
+                        .Builder()
+                        .code(code)
+                        .addHeader("Location", "${elsewhere.url}/")
+                        .build()
+                }
+                client.me()
+            }
+
+            // A refusal (401) ends the session and erases the copy: SessionOfflineCopyTest covers it.
+            assertEquals(before, graph.offlineCopy.lastContactAt)
+        }
 }

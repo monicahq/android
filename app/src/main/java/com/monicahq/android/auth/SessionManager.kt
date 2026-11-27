@@ -2,11 +2,16 @@ package com.monicahq.android.auth
 
 import com.monicahq.android.network.ApiClient
 import com.monicahq.android.network.ApiResult
+import com.monicahq.android.offline.OfflineCopy
+import com.monicahq.android.offline.Owner
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
@@ -57,6 +62,8 @@ class SessionManager(
     private val store: AuthStore,
     private val tokenClient: TokenEndpointClient,
     private val httpClient: OkHttpClient,
+    /** The offline copy lives exactly as long as the session: opened here, erased here. */
+    private val offlineCopy: OfflineCopy,
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
     private val _state = MutableStateFlow<SessionState>(SessionState.Loading)
@@ -84,8 +91,12 @@ class SessionManager(
             session = stored
             generation++
             if (stored == null) {
+                // A copy left by a run that died during sign-out is erased before anything shows.
+                offlineCopy.erase()
                 _state.value = SessionState.SignedOut()
             } else {
+                // Another owner's, unreadable or too old (30 days): erased before anything shows.
+                openCopy(Owner(stored.issuer, stored.user.id))
                 currentClient = ApiClient(stored.issuer, generation, this, httpClient)
                 _state.value = SessionState.SignedIn(stored.user, stored.issuer)
             }
@@ -132,6 +143,7 @@ class SessionManager(
                 if (draftGeneration != generation || current == null) return ApiResult.Discarded
                 if (result is ApiResult.Success) {
                     val signedIn = current.copy(user = result.value)
+                    openCopy(Owner(issuer, result.value.id))
                     store.saveSession(signedIn)
                     session = signedIn
                     currentClient = client
@@ -167,31 +179,35 @@ class SessionManager(
             if (current.accessToken != staleAccessToken) return Access.Token(current.accessToken)
 
             val result = tokenClient.refresh(current.tokenEndpoint, current.clientId, current.refreshToken)
-            commitLock.withLock {
-                if (requestGeneration != generation) return Access.Discarded
-                when (result) {
-                    is TokenResult.Success -> {
-                        val now = clock()
-                        val renewed =
-                            current.copy(
-                                accessToken = result.tokens.accessToken,
-                                accessTokenExpiresAt = expiry(now, result.tokens.expiresIn),
-                                refreshToken = result.tokens.refreshToken,
-                                refreshTokenObtainedAt = now,
-                            )
-                        store.saveSession(renewed)
-                        session = renewed
-                        Access.Token(renewed.accessToken)
-                    }
+            // Not cancellable: the instance has already rotated the refresh token, so the new one
+            // must be saved, and an ended session must be erased, even if the screen went away.
+            withContext(NonCancellable) {
+                commitLock.withLock {
+                    if (requestGeneration != generation) return@withContext Access.Discarded
+                    when (result) {
+                        is TokenResult.Success -> {
+                            val now = clock()
+                            val renewed =
+                                current.copy(
+                                    accessToken = result.tokens.accessToken,
+                                    accessTokenExpiresAt = expiry(now, result.tokens.expiresIn),
+                                    refreshToken = result.tokens.refreshToken,
+                                    refreshTokenObtainedAt = now,
+                                )
+                            store.saveSession(renewed)
+                            session = renewed
+                            Access.Token(renewed.accessToken)
+                        }
 
-                    TokenResult.Refused -> {
-                        val expired = clock() - current.refreshTokenObtainedAt >= REFRESH_TOKEN_LIFETIME
-                        endLocked(if (expired) SignOutReason.Expired else SignOutReason.Revoked)
-                        Access.Ended
-                    }
+                        TokenResult.Refused -> {
+                            val expired = clock() - current.refreshTokenObtainedAt >= REFRESH_TOKEN_LIFETIME
+                            endLocked(if (expired) SignOutReason.Expired else SignOutReason.Revoked)
+                            Access.Ended
+                        }
 
-                    is TokenResult.Failed -> {
-                        Access.Failed(result.error)
+                        is TokenResult.Failed -> {
+                            Access.Failed(result.error)
+                        }
                     }
                 }
             }
@@ -199,7 +215,9 @@ class SessionManager(
 
     /** The instance refused even renewed access: the session is over. */
     internal suspend fun rejected(requestGeneration: Int) {
-        commitLock.withLock { if (requestGeneration == generation) endLocked(SignOutReason.Revoked) }
+        withContext(NonCancellable) {
+            commitLock.withLock { if (requestGeneration == generation) endLocked(SignOutReason.Revoked) }
+        }
     }
 
     /** True while [requestGeneration] is the current one. */
@@ -211,23 +229,62 @@ class SessionManager(
      * a later start. Also used before switching instance.
      */
     suspend fun logOut() {
+        // Not cancellable: a screen closing mid-way must not leave a session half ended.
         val ended =
-            commitLock.withLock {
-                val current = session
-                store.clearPendingSignIn()
-                endLocked(SignOutReason.LoggedOut)
-                current
+            withContext(NonCancellable) {
+                commitLock.withLock {
+                    val current = session
+                    store.clearPendingSignIn()
+                    endLocked(SignOutReason.LoggedOut)
+                    current
+                }
             }
         revoke(ended)
     }
 
-    private suspend fun endLocked(reason: SignOutReason) {
-        generation++
-        session = null
-        currentClient?.cancelAll()
-        currentClient = null
-        store.clearSession()
-        _state.value = SessionState.SignedOut(reason)
+    /**
+     * Every session end goes through here. The offline copy is erased before [SignedOut] is
+     * published, so the welcome screen never shows while the session's data is still on the phone.
+     */
+    private suspend fun endLocked(reason: SignOutReason) =
+        // Not cancellable: whoever triggered the end (a screen's request) may be cancelled meanwhile,
+        // and an end must never stop between clearing the session and erasing the copy.
+        withContext(NonCancellable) {
+            generation++
+            session = null
+            currentClient?.cancelAll()
+            currentClient = null
+            store.clearSession()
+            // A failure never stops the sign-out: the key is destroyed first, and the next start
+            // sweeps what is left.
+            try {
+                offlineCopy.erase()
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+            }
+            _state.value = SessionState.SignedOut(reason)
+        }
+
+    /**
+     * Opens the offline copy for [owner]. A copy that cannot be opened (full disk, broken Keystore)
+     * never stops the session: it is erased, and the app works online without one.
+     */
+    private suspend fun openCopy(owner: Owner) {
+        try {
+            offlineCopy.openOrErase(owner, clock())
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            try {
+                offlineCopy.erase()
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+            }
+        }
+    }
+
+    /** The instance answered a request of the session: the offline copy is still confirmed. */
+    internal suspend fun contacted() {
+        offlineCopy.contacted(clock())
     }
 
     private suspend fun revoke(ended: Session?) {

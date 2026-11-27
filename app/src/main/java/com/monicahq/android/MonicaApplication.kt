@@ -13,11 +13,13 @@ import com.monicahq.android.auth.TokenEndpointClient
 import com.monicahq.android.instance.InstanceChecker
 import com.monicahq.android.instance.InstanceRepository
 import com.monicahq.android.network.HttpClients
+import com.monicahq.android.offline.RoomOfflineCopy
 import com.monicahq.android.vault.VaultRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import java.io.File
 
 private val Context.settings by preferencesDataStore(name = "settings")
 
@@ -43,9 +45,19 @@ class MonicaApplication : Application() {
         InstanceChecker(httpClient, appVersion = BuildConfig.VERSION_NAME, allowHttp = BuildConfig.DEBUG)
     }
 
-    val sessionManager: SessionManager by lazy { SessionManager(authStore, tokenClient, httpClient) }
+    /** Kept in `noBackupFilesDir`, which Android never backs up nor transfers to another phone. */
+    private val offlineCopy by lazy {
+        RoomOfflineCopy(
+            context = this,
+            directory = File(noBackupFilesDir, "offline"),
+            cipher = KeystoreTokenCipher(KeystoreTokenCipher.OFFLINE_ALIAS),
+            dispatcher = Dispatchers.IO,
+        )
+    }
 
-    val vaultRepository: VaultRepository by lazy { VaultRepository(sessionManager) }
+    val sessionManager: SessionManager by lazy { SessionManager(authStore, tokenClient, httpClient, offlineCopy) }
+
+    val vaultRepository: VaultRepository by lazy { VaultRepository(sessionManager, offlineCopy) }
 
     val signInManager: SignInManager by lazy {
         SignInManager(authStore, instanceChecker, tokenClient, sessionManager, deviceName())

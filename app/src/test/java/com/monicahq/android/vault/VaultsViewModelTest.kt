@@ -6,6 +6,7 @@ import com.monicahq.android.TestGraph
 import com.monicahq.android.auth.AuthError
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
@@ -102,27 +103,21 @@ class VaultsViewModelTest {
         }
 
     @Test
-    fun `a quiet reload that fails changes nothing`() =
+    fun `a quiet reload that fails keeps the list, marked not up to date`() =
         runTest {
             monica.addVaults("Personal")
+            graph.now = 1_800_000_000_000L
             val viewModel = viewModel()
             viewModel.onShown()
             val loaded = viewModel.awaitState { it.content is VaultsContent.Loaded }
             failNextLoads()
 
             viewModel.onShown()
-            withContext(Dispatchers.Default) {
-                withTimeout(5_000) {
-                    while (monica.requestsTo("/api/v1/vaults").size <
-                        2
-                    ) {
-                        Thread.sleep(10)
-                    }
-                }
-            }
-            Thread.sleep(100)
+            val stale = viewModel.awaitState { it.staleSince != null }
 
-            assertEquals(loaded, viewModel.uiState.value)
+            assertEquals(loaded.content, stale.content)
+            assertEquals(graph.now, stale.staleSince)
+            assertNull(stale.refreshError)
         }
 
     @Test
@@ -215,5 +210,83 @@ class VaultsViewModelTest {
             // Cleared at once, so the screen sees a new failure when it comes.
             assertNull(viewModel.uiState.value.refreshError)
             assertEquals(AuthError.ServerError, viewModel.awaitState { !it.refreshing }.refreshError)
+        }
+
+    @Test
+    fun `the copy shows at once, without loading, then the answer replaces it`() =
+        runTest {
+            monica.addVaults("Personal")
+            val viewModel = viewModel()
+            viewModel.onShown()
+            viewModel.awaitState { it.content is VaultsContent.Loaded }
+            monica.vaults[0] = monica.vaults[0].copy(name = "Me")
+            monica.overrides["/api/v1/vaults"] = { request ->
+                FakeMonica.delayed(
+                    FakeMonica.json("""{"data":[{"id":"vault-1","attributes":{"name":"Me"}}],"meta":{"total":1}}"""),
+                    300,
+                )
+            }
+
+            // A new screen, as after the app restarts.
+            val reopened = VaultsViewModel(graph.vaultRepository)
+            val states = mutableListOf<VaultsUiState>()
+            val collecting = launch(mainDispatcherRule.dispatcher) { reopened.uiState.collect { states += it } }
+            reopened.onShown()
+            reopened.awaitState { it.content is VaultsContent.Loaded && it.names() == listOf("Me") }
+            collecting.cancel()
+
+            val contents = states.map { it.content }.filter { it != VaultsContent.Loading }
+            assertEquals(listOf("Personal"), (contents.first() as VaultsContent.Loaded).vaults.map { it.name })
+            assertTrue(states.drop(1).none { it.content == VaultsContent.Loading || it.refreshing })
+        }
+
+    @Test
+    fun `offline with a copy shows it, marked not up to date`() =
+        runTest {
+            monica.addVaults("Personal", "Family")
+            graph.now = 1_800_000_000_000L
+            val viewModel = viewModel()
+            viewModel.onShown()
+            viewModel.awaitState { it.content is VaultsContent.Loaded }
+            failNextLoads()
+
+            val reopened = VaultsViewModel(graph.vaultRepository)
+            reopened.onShown()
+            val stale = reopened.awaitState { it.staleSince != null }
+
+            assertEquals(listOf("Personal", "Family"), stale.names())
+            assertEquals(graph.now, stale.staleSince)
+        }
+
+    @Test
+    fun `a successful answer clears the not up to date mark`() =
+        runTest {
+            monica.addVaults("Personal")
+            val viewModel = viewModel()
+            viewModel.onShown()
+            viewModel.awaitState { it.content is VaultsContent.Loaded }
+            failNextLoads()
+            viewModel.onShown()
+            viewModel.awaitState { it.staleSince != null }
+            answerLoadsAgain()
+
+            viewModel.refresh()
+
+            assertNull(viewModel.awaitState { !it.refreshing && it.staleSince == null }.staleSince)
+        }
+
+    @Test
+    fun `a failed pull to refresh says so and marks the list not up to date`() =
+        runTest {
+            monica.addVaults("Personal")
+            val viewModel = viewModel()
+            viewModel.onShown()
+            viewModel.awaitState { it.content is VaultsContent.Loaded }
+            failNextLoads()
+
+            viewModel.refresh()
+            val failed = viewModel.awaitState { !it.refreshing && it.refreshError != null }
+
+            assertEquals(graph.now, failed.staleSince)
         }
 }

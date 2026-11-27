@@ -70,6 +70,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.monicahq.android.R
 import com.monicahq.android.auth.AuthError
+import com.monicahq.android.ui.StaleNotice
 import com.monicahq.android.ui.theme.MonicaTheme
 import com.monicahq.android.ui.theme.colours
 
@@ -170,28 +171,36 @@ fun VaultsScreen(
 
             is VaultsContent.Loaded -> {
                 val refreshLabel = stringResource(R.string.vaults_refresh)
-                PullToRefreshBox(isRefreshing = uiState.refreshing, onRefresh = onRefresh, modifier = content) {
-                    LazyColumn(
-                        state = listState,
-                        // The pull gesture has an alternative in TalkBack's and Switch Access's
-                        // actions, on the list and on each card (TalkBack focuses the cards).
-                        modifier =
-                            Modifier.fillMaxSize().semantics {
-                                customActions =
-                                    listOf(
-                                        CustomAccessibilityAction(refreshLabel) {
-                                            onRefresh()
-                                            true
-                                        },
-                                    )
-                            },
-                        // The bottom space keeps the floating button from hiding the last card.
-                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 104.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        item { Title(Modifier.padding(start = 4.dp, end = 4.dp, bottom = 12.dp)) }
-                        items(state.vaults, key = { it.id }) { vault ->
-                            VaultCard(vault, onClick = { onVaultClick(vault.id) }, onRefresh = onRefresh)
+                Column(content) {
+                    // Outside the list: visible and announced even when the list is scrolled.
+                    StaleNotice(
+                        staleSince = uiState.staleSince,
+                        modifier = Modifier.fillMaxWidth(),
+                        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 8.dp),
+                    )
+                    PullToRefreshBox(isRefreshing = uiState.refreshing, onRefresh = onRefresh, modifier = Modifier.weight(1f)) {
+                        LazyColumn(
+                            state = listState,
+                            // The pull gesture has an alternative in TalkBack's and Switch Access's
+                            // actions, on the list and on each card (TalkBack focuses the cards).
+                            modifier =
+                                Modifier.fillMaxSize().semantics {
+                                    customActions =
+                                        listOf(
+                                            CustomAccessibilityAction(refreshLabel) {
+                                                onRefresh()
+                                                true
+                                            },
+                                        )
+                                },
+                            // The bottom space keeps the floating button from hiding the last card.
+                            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 104.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            item { Title(Modifier.padding(start = 4.dp, end = 4.dp, bottom = 12.dp)) }
+                            items(state.vaults, key = { it.id }) { vault ->
+                                VaultCard(vault, onClick = { onVaultClick(vault.id) }, onRefresh = onRefresh)
+                            }
                         }
                     }
                 }
@@ -464,6 +473,24 @@ private val previewVaults =
 private fun VaultsScreenPreview() {
     MonicaTheme {
         VaultsScreen(VaultsUiState(VaultsContent.Loaded(previewVaults)), "JD", {}, {}, {}, {}, {}, {})
+    }
+}
+
+@Preview(name = "Not up to date, light", showSystemUi = true)
+@Preview(name = "Not up to date, dark", showSystemUi = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun VaultsScreenStalePreview() {
+    MonicaTheme {
+        VaultsScreen(
+            VaultsUiState(VaultsContent.Loaded(previewVaults), staleSince = System.currentTimeMillis() - 3 * 3_600_000L),
+            "JD",
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+        )
     }
 }
 

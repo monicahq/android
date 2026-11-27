@@ -1,8 +1,12 @@
 package com.monicahq.android.vault
 
 import com.monicahq.android.auth.SessionManager
+import com.monicahq.android.auth.SessionState
 import com.monicahq.android.network.ApiClient
 import com.monicahq.android.network.ApiResult
+import com.monicahq.android.offline.Cached
+import com.monicahq.android.offline.OfflineCopy
+import com.monicahq.android.offline.Owner
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -19,9 +23,18 @@ import kotlinx.serialization.json.put
  */
 class VaultRepository(
     private val sessions: SessionManager,
+    private val offlineCopy: OfflineCopy,
+    private val clock: () -> Long = System::currentTimeMillis,
 ) {
-    /** Every vault, in the order the account arranged them, asking page after page. */
+    /** The vault list kept on the phone, shown before (or instead of) the instance's answer. */
+    suspend fun cachedVaults(): Cached<List<Vault>>? = offlineCopy.vaults.all()
+
+    /** One vault kept on the phone, even if it was only ever received in the list. */
+    suspend fun cachedVault(id: String): Cached<Vault>? = offlineCopy.vaults.one(id)
+
+    /** Every vault, in the order the account arranged them, asking page after page; kept on the phone. */
     suspend fun vaults(): ApiResult<List<Vault>> {
+        val owner = owner() ?: return ApiResult.Discarded
         val client = sessions.apiClient() ?: return ApiResult.Discarded
         val vaults = mutableListOf<Vault>()
         var page = 1
@@ -30,13 +43,25 @@ class VaultRepository(
             if (result !is ApiResult.Success) return result.withoutValue()
             vaults += result.value.data.map { it.toVault() }
             // An empty page ends it too: vaults deleted while paging would otherwise loop forever.
-            if (vaults.size >= result.value.meta.total || result.value.data.isEmpty()) return ApiResult.Success(vaults)
+            if (vaults.size >= result.value.meta.total || result.value.data.isEmpty()) {
+                offlineCopy.vaults.replaceAll(owner, vaults, clock())
+                return ApiResult.Success(vaults)
+            }
             page++
         }
     }
 
-    /** One vault, by its id. [ApiResult.NotFound] when it was deleted. */
-    suspend fun vault(id: String): ApiResult<Vault> = withClient { it.get("/api/v1/vaults/$id", ::parseOne) }
+    /** One vault, by its id, kept on the phone. [ApiResult.NotFound] when it was deleted: it leaves the copy. */
+    suspend fun vault(id: String): ApiResult<Vault> {
+        val owner = owner() ?: return ApiResult.Discarded
+        val result = withClient { it.get("/api/v1/vaults/$id", ::parseOne) }
+        when (result) {
+            is ApiResult.Success -> offlineCopy.vaults.replaceOne(owner, result.value, clock())
+            ApiResult.NotFound -> offlineCopy.vaults.remove(owner, id)
+            else -> Unit
+        }
+        return result
+    }
 
     /** Creates a vault. It goes at the end of the list; refusals come back as [ApiResult.Invalid]. */
     suspend fun create(newVault: NewVault): ApiResult<Vault> {
@@ -52,6 +77,9 @@ class VaultRepository(
             }
         return withClient { it.post("/api/v1/vaults", body.toString(), ::parseOne) }
     }
+
+    /** Whom an answer will be kept for; taken before the call, so a later sign-out drops the write. */
+    private fun owner(): Owner? = (sessions.state.value as? SessionState.SignedIn)?.let { Owner(it.instanceUrl, it.user.id) }
 
     private suspend fun <T> withClient(call: suspend (ApiClient) -> ApiResult<T>): ApiResult<T> =
         sessions.apiClient()?.let { call(it) } ?: ApiResult.Discarded
@@ -105,6 +133,7 @@ private data class VaultAttributes(
     val colour: String? = null,
     @SerialName("is_default") val isDefault: Boolean = false,
     @SerialName("contact_count") val contactCount: Int = 0,
+    @SerialName("updated_at") val updatedAt: Long? = null,
 )
 
 private fun VaultObject.toVault(): Vault =
@@ -115,4 +144,5 @@ private fun VaultObject.toVault(): Vault =
         colour = VaultColour.fromApi(attributes.colour),
         isDefault = attributes.isDefault,
         contactCount = attributes.contactCount,
+        serverUpdatedAt = attributes.updatedAt,
     )

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Monica design system "cloud-off" glyph: shown with the "not up to date" line. Tinted by the caller. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="16dp"
+    android:height="16dp"
+    android:viewportWidth="16"
+    android:viewportHeight="16">
+    <path
+        android:pathData="M5.2,5.1C4.9,5.4 4.7,5.8 4.6,6.2C3.1,6.4 2,7.6 2,9.1C2,10.7 3.3,12 4.9,12L11,12M7.2,3.4C7.6,3.3 8,3.2 8.4,3.2C10.1,3.2 11.5,4.5 11.8,6.1C13.1,6.3 14,7.4 14,8.7C14,9.5 13.7,10.2 13.1,10.7"
+        android:strokeWidth="1.4"
+        android:strokeColor="#FF000000"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M2.5,2.5L13.5,13.5"
+        android:strokeWidth="1.4"
+        android:strokeColor="#FF000000"
+        android:strokeLineCap="round" />
+</vector>

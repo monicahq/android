@@ -152,6 +152,9 @@ class ApiClient internal constructor(
         parse: (String) -> T,
     ): ApiResult<T> {
         if (!sessions.isCurrent(generation)) return ApiResult.Discarded
+        // An answer the instance only gives to an accepted token proves the session still holds
+        // (the offline copy's 30-day limit). A redirect or a server error proves nothing.
+        if (sent is Sent.Answer && sent.code in PROOF_OF_SESSION) sessions.contacted()
         return when (sent) {
             is Sent.Failure -> {
                 ApiResult.Failed(sent.error)
@@ -197,6 +200,7 @@ class ApiClient internal constructor(
 
     private companion object {
         val json = Json { ignoreUnknownKeys = true }
+        val PROOF_OF_SESSION = (200..299) + listOf(403, 404, 422)
         val JSON = "application/json".toMediaType()
     }
 }

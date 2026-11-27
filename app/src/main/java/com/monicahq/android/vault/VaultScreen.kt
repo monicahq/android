@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.monicahq.android.R
+import com.monicahq.android.ui.StaleNotice
 import com.monicahq.android.ui.theme.MonicaTheme
 
 /** Connects [VaultScreen] to its view model. */
@@ -102,6 +103,7 @@ fun VaultScreen(
                         color = MaterialTheme.colorScheme.onBackground,
                         modifier = Modifier.semantics { heading() },
                     )
+                    StaleNotice(uiState.staleSince)
                     uiState.vault.description?.let {
                         Text(it, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }

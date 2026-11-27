@@ -1,6 +1,9 @@
 package com.monicahq.android.vault
 
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
@@ -272,5 +275,57 @@ class VaultsScreenTest {
         composeRule.enableAccessibilityChecks()
         setScreen(VaultsUiState(), darkTheme = true)
         composeRule.onRoot().tryPerformAccessibilityChecks()
+    }
+
+    @Test
+    fun aListFromTheCopySaysItIsNotUpToDate() {
+        setScreen(VaultsUiState(VaultsContent.Loaded(vaults), staleSince = System.currentTimeMillis() - 3 * 3_600_000L))
+
+        composeRule.onNodeWithText("Not up to date", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithText("Personal", substring = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun anUpToDateListSaysNothingMore() {
+        setScreen()
+
+        composeRule.onNodeWithText("Not up to date", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun theNewAnswerReplacesTheCopyWithoutAnyProgressIndicator() {
+        var uiState by mutableStateOf(VaultsUiState(VaultsContent.Loaded(vaults)))
+        composeRule.setContent {
+            MonicaTheme {
+                VaultsScreen(uiState, "JD", {}, {}, {}, {}, {}, {})
+            }
+        }
+
+        uiState = VaultsUiState(VaultsContent.Loaded(vaults.map { if (it.id == "v2") it.copy(name = "Famille") else it }))
+
+        composeRule.onNodeWithText("Famille", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithText("Personal", substring = true).assertIsDisplayed()
+        composeRule.onNode(SemanticsMatcher.keyIsDefined(SemanticsProperties.ProgressBarRangeInfo)).assertDoesNotExist()
+    }
+
+    @Test
+    fun theNotUpToDateLinePassesAccessibilityChecksInDarkTheme() {
+        composeRule.enableAccessibilityChecks()
+        setScreen(VaultsUiState(VaultsContent.Loaded(everyColour), staleSince = System.currentTimeMillis() - 60_000L), darkTheme = true)
+        composeRule.onRoot().tryPerformAccessibilityChecks()
+    }
+
+    @Test
+    fun theNotUpToDateLinePassesAccessibilityChecksInLightTheme() {
+        composeRule.enableAccessibilityChecks()
+        setScreen(VaultsUiState(VaultsContent.Loaded(everyColour), staleSince = System.currentTimeMillis() - 60_000L))
+        composeRule.onRoot().tryPerformAccessibilityChecks()
+    }
+
+    @Test
+    fun theNotUpToDateLineStaysReadableAtTheLargestFont() {
+        setScreen(VaultsUiState(VaultsContent.Loaded(vaults), staleSince = System.currentTimeMillis() - 60_000L), fontScale = 2f)
+
+        composeRule.onNodeWithText("Not up to date", substring = true).assertIsDisplayed()
     }
 }

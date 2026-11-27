@@ -19,6 +19,8 @@ sealed interface VaultUiState {
 
     data class Loaded(
         val vault: Vault,
+        /** Shown from the copy kept on the phone because the instance could not be reached: since when. */
+        val staleSince: Long? = null,
     ) : VaultUiState
 
     /** Deleted on the web since the list was loaded, or never there. */
@@ -48,19 +50,29 @@ class VaultViewModel(
 
     private fun load() {
         viewModelScope.launch {
+            // The copy kept on the phone shows at once, even for a vault only received in the list.
+            val cached = repository.cachedVault(vaultId)
+            if (cached != null) state.update { if (it == VaultUiState.Loading) VaultUiState.Loaded(cached.value) else it }
             when (val result = repository.vault(vaultId)) {
                 is ApiResult.Success -> state.update { VaultUiState.Loaded(result.value) }
 
                 ApiResult.NotFound -> state.update { VaultUiState.NotFound }
 
-                is ApiResult.Failed -> state.update { VaultUiState.Failed(result.error) }
+                is ApiResult.Failed -> state.value = state.value.failedWith(result.error)
 
-                is ApiResult.Invalid -> state.update { VaultUiState.Failed(AuthError.ServerError) }
+                is ApiResult.Invalid -> state.value = state.value.failedWith(AuthError.ServerError)
 
                 // The app is leaving the signed-in screens.
                 ApiResult.SessionEnded, ApiResult.Discarded -> Unit
             }
         }
+    }
+
+    /** A vault on screen stays, marked as not up to date; without one, the error shows. */
+    private suspend fun VaultUiState.failedWith(error: AuthError): VaultUiState {
+        if (this !is VaultUiState.Loaded) return VaultUiState.Failed(error)
+        val since = repository.cachedVault(vaultId)?.syncedAt ?: return VaultUiState.Failed(error)
+        return copy(staleSince = since)
     }
 
     companion object {

@@ -92,4 +92,5 @@
     <string name="vault_default_description">Coffre par défaut</string>
     <string name="vault_title">Coffre</string>
     <string name="vault_loading">Chargement du coffre</string>
+    <string name="stale_notice">Pas à jour. Mis à jour %1$s.</string>
 </resources>
