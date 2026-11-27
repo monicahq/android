@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Monica design system "settings" glyph. Tinted by the theme. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="16dp"
+    android:height="16dp"
+    android:viewportWidth="16"
+    android:viewportHeight="16">
+    <path
+        android:pathData="M6.81,3.56L6.87,1.9L9.13,1.9L9.19,3.56L11.25,4.75L12.71,3.97L13.84,5.93L12.44,6.81L12.44,9.19L13.84,10.07L12.71,12.03L11.25,11.25L9.19,12.44L9.13,14.1L6.87,14.1L6.81,12.44L4.75,11.25L3.29,12.03L2.16,10.07L3.56,9.19L3.56,6.81L2.16,5.93L3.29,3.97L4.75,4.75Z"
+        android:strokeWidth="1.4"
+        android:strokeColor="#FF000000"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M10.1,8A2.1,2.1 0,1 1,5.9,8A2.1,2.1 0,1 1,10.1,8Z"
+        android:strokeWidth="1.4"
+        android:strokeColor="#FF000000" />
+</vector>

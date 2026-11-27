@@ -25,8 +25,11 @@ same package, following the `tests` skill and `docs/testing.md`. A changed class
 this step.
 
 ```bash
-./gradlew testDebugUnitTest
+./gradlew testDebugUnitTest koverVerifyDebug
 ```
+
+`koverVerifyDebug` fails when non-UI line coverage drops below 80%. Keep logic out of `*Screen.kt`
+files (they are excluded from the measure) and test it on the JVM.
 
 ## 3. UI tests
 
@@ -68,8 +71,13 @@ The release build runs R8: a class reached by reflection that it strips shows up
 
 ## 7. Strings and accessibility
 
-Every user-visible text is in `app/src/main/res/values/strings.xml`. Every meaningful image or icon
-has a content description, every clickable element a touch target of at least 48dp.
+Every user-visible text is in `app/src/main/res/values/strings.xml` and translated in every
+supported language (constitution, principle VI).
+
+Accessibility is mandatory (principle VII). Follow the `accessibility` skill: the screen's UI tests
+run the automated accessibility checks, the `accessibility-reviewer` agent has reviewed the change
+and its confirmed findings are fixed, and the manual checks of `docs/accessibility.md` are done or
+explicitly reported as not done.
 
 ## 8. Documentation
 

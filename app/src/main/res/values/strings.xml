@@ -1,4 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Monica</string>
-    <string name="welcome">Welcome to Monica</string>
+    <string name="app_name" translatable="false">Monica</string>
+    <string name="welcome_title">Welcome to Monica</string>
+    <string name="welcome_description">Monica helps you remember and organise your relationships and life context.</string>
+    <string name="welcome_sign_up">Sign up</string>
+    <string name="welcome_log_in">Log in</string>
+    <!-- %1$s is the address of the Monica instance, e.g. app.monicahq.com -->
+    <string name="welcome_instance">Instance: %1$s</string>
+    <string name="welcome_instance_settings">Instance settings</string>
+    <string name="welcome_illustration">A panda sitting in the grass, waving</string>
+
+    <string name="instance_sheet_title">Instance URL</string>
+    <string name="instance_sheet_description">The address of the Monica server the app connects to. Keep the default to use the hosted service, or enter the address of your own instance.</string>
+    <string name="instance_sheet_address">Address</string>
+    <string name="instance_sheet_placeholder">https://monica.example.com</string>
+    <string name="instance_sheet_invalid">Enter an address like https://monica.example.com</string>
+    <string name="instance_sheet_reset">Reset to default</string>
+    <string name="instance_sheet_cancel">Cancel</string>
+    <string name="instance_sheet_save">Save</string>
 </resources>

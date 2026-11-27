@@ -21,6 +21,9 @@ Summary of what it demands:
    using fakes. Bug fixes start with a failing test. See `docs/testing.md`.
 4. **UI tested**: every screen has Compose UI tests for each state and main interaction.
 5. **Native only**: no KMP, Compose Multiplatform, Flutter, RN or WebView UI. iOS is separate.
+6. **Multilingual**: every text in string resources; English default and fallback, French too.
+7. **Accessible (mandatory)**: WCAG 2.2 AA on mobile, automated checks in UI tests, TalkBack
+   checked. See `docs/accessibility.md` and the `accessibility` skill.
 
 ## Stack
 - AGP 9 with built-in Kotlin (do not add `org.jetbrains.kotlin.android`), Compose compiler plugin
@@ -30,7 +33,7 @@ Summary of what it demands:
 ## Before considering a change done
 Follow the `definition-of-done` skill. In short:
 ```sh
-./gradlew spotlessApply lintDebug testDebugUnitTest assembleDebug
+./gradlew spotlessApply lintDebug testDebugUnitTest koverVerifyDebug assembleDebug
 ./gradlew connectedDebugAndroidTest   # when UI changed and a device/emulator is available
 ```
 CI (`.github/workflows/ci.yml`) runs all of these plus instrumented tests on an emulator.
@@ -45,6 +48,7 @@ ruleset and `.claude/hooks/block-push-to-main.sh`). Follow the `commits` skill: 
 - `definition-of-done`: checklist before every commit and PR
 - `commits`: commit messages, branches, pull requests
 - `tests`: how to write unit and UI tests
+- `accessibility`: accessibility rules for every screen; agent `accessibility-reviewer` reviews a change
 - `feature-documentator`: keep `docs/FEATURES.md` up to date after every feature
 - `take-screenshot`: capture the app on an emulator for pull requests
 - Spec Kit extensions: `speckit-bug-*` (bug triage), `speckit-assess-*` (evaluate an idea

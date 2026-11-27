@@ -34,6 +34,8 @@ class ContactsViewModelTest {
 - Find nodes by visible text or semantics (`onNodeWithText`, `onNodeWithContentDescription`).
   Use `testTag` only as a last resort.
 - Each user journey from a spec gets at least one end-to-end test through `MainActivity`.
+- Each screen has a test running the automated accessibility checks
+  (`enableAccessibilityChecks()`), see [accessibility.md](accessibility.md).
 
 ```kotlin
 class ContactsScreenTest {
@@ -49,10 +51,34 @@ class ContactsScreenTest {
 }
 ```
 
+## Coverage
+
+Kover measures the unit tests' line coverage of non-UI code and fails under 80%
+(`app/build.gradle.kts`). Composables, `*Screen.kt` files, previews, `MainActivity` and the theme
+are excluded: they are covered by the UI tests. So keep logic out of screen files: a pure function
+a screen needs (like `welcome/Highlight.kt`) goes in its own file, with its own unit test.
+
+## Languages
+
+`StringResourcesParityTest` fails when a key or a placeholder is missing in one of the
+`values-*/strings.xml` files. UI tests show a screen in another language without changing the
+device's by providing `LocalResources` and `LocalConfiguration` for that locale (see
+`WelcomeScreenTest`). Keep the real `LocalContext`: bottom sheets and dialogs open their own
+window, which needs the activity's context.
+
+## ViewModels
+
+- `MainDispatcherRule` (in `src/test`) runs `viewModelScope` on a test dispatcher.
+- Collect `uiState` in `backgroundScope` before checking `uiState.value`, as the screen does
+  (`SharingStarted.WhileSubscribed` only starts with a collector). See `WelcomeViewModelTest`.
+- `FakePreferencesDataStore` replaces DataStore in memory; repository tests use a real DataStore in
+  a `TemporaryFolder`.
+
 ## Running locally
 
 ```sh
 ./gradlew testDebugUnitTest                 # fast, run all the time
+./gradlew koverVerifyDebug                  # coverage gate; koverHtmlReportDebug for the report
 ./gradlew connectedDebugAndroidTest         # needs a running emulator or a device
 ```
 

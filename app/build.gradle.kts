@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kover)
 }
 
 android {
@@ -42,6 +43,11 @@ android {
         compose = true
     }
 
+    // Lists the languages of res/values-* in the system's per-app language setting (Android 13+).
+    androidResources {
+        generateLocaleConfig = true
+    }
+
     lint {
         warningsAsErrors = false
         abortOnError = true
@@ -53,6 +59,9 @@ android {
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
@@ -61,12 +70,48 @@ dependencies {
     implementation(libs.androidx.compose.material3)
 
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
 
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4.accessibility)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+}
+
+// Coverage gate for non-UI code (constitution, principle III). UI code is covered by the Compose
+// UI tests, which run on a device and are not measured here.
+kover {
+    reports {
+        filters {
+            excludes {
+                annotatedBy(
+                    "androidx.compose.runtime.Composable",
+                    "androidx.compose.ui.tooling.preview.Preview",
+                )
+                packages("com.monicahq.android.ui.theme")
+                // Screen and sheet files hold only composables; their logic lives in other files.
+                classes(
+                    "com.monicahq.android.MainActivity",
+                    "com.monicahq.android.MonicaApplication",
+                    "*ScreenKt",
+                    "*ScreenKt$*",
+                    "*SheetKt",
+                    "*SheetKt$*",
+                    "*.R",
+                    "*.R$*",
+                    "*.BuildConfig",
+                    "*ComposableSingletons*",
+                )
+            }
+        }
+        verify {
+            rule {
+                minBound(80)
+            }
+        }
+    }
 }
