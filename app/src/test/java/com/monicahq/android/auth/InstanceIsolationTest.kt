@@ -16,8 +16,9 @@ import java.util.concurrent.TimeUnit
 
 /** Nothing belonging to instance A ever reaches instance B (SC-005). */
 class InstanceIsolationTest {
-    private val a = FakeMonica(tokenPrefix = "a-")
-    private val b = FakeMonica(tokenPrefix = "b-")
+    // Long enough that a random PKCE verifier or state sent to B never contains it by chance.
+    private val a = FakeMonica(tokenPrefix = A_TOKENS)
+    private val b = FakeMonica(tokenPrefix = "instance-b-")
     private val graph = TestGraph()
 
     @After
@@ -27,13 +28,13 @@ class InstanceIsolationTest {
     }
 
     private fun assertBReceivedNothingFromA() {
-        assertTrue(b.requests.none { it.headers["Authorization"].orEmpty().contains("a-") })
+        assertTrue(b.requests.none { it.headers["Authorization"].orEmpty().contains(A_TOKENS) })
         assertTrue(
             b.requests.none {
                 it.body
                     ?.utf8()
                     .orEmpty()
-                    .contains("a-")
+                    .contains(A_TOKENS)
             },
         )
     }
@@ -99,4 +100,8 @@ class InstanceIsolationTest {
             assertTrue(graph.sessionManager.state.value is SessionState.SignedIn)
             assertBReceivedNothingFromA()
         }
+
+    private companion object {
+        const val A_TOKENS = "instance-a-"
+    }
 }
